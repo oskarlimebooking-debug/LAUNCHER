@@ -40,6 +40,9 @@ class WeatherRepository(
     private val _state = MutableStateFlow(loadCached())
     val state: StateFlow<WeatherSnapshot?> = _state
 
+    /** True when an OWM API key was supplied — gates network work for callers like WeatherWorker. */
+    val isConfigured: Boolean get() = apiKey.isNotBlank()
+
     suspend fun fetch(lat: Double, lon: Double): Result<WeatherSnapshot> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -61,14 +64,13 @@ class WeatherRepository(
             }
         }
 
-    suspend fun refresh(lat: Double, lon: Double) {
+    suspend fun refresh(lat: Double, lon: Double): Result<WeatherSnapshot> =
         fetch(lat, lon)
             .onSuccess { snap ->
                 _state.value = snap
                 prefs.edit().putString("snap", snapAdapter.toJson(snap)).apply()
             }
             .onFailure { Timber.w(it, "weather refresh failed") }
-    }
 
     suspend fun reverseGeocodeBlocking(lat: Double, lon: Double): String =
         reverseGeocode(lat, lon)
