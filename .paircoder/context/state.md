@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.26 done — 26/49 tasks done, T1.27 next)
+> Last updated: 2026-05-09 (T1.27 done — TripsFragment + adapter wired)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 26/49 tasks done (Phases 1–4 + T1.19–T1.26).
-T1.27 (next pending Phase 6 task).
+**Status:** Planning complete and reconciled. 27/49 tasks done (Phase 6 complete: T1.23–T1.27).
+T1.28 (next pending — Phase 7 app grid).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -59,12 +59,12 @@ Phase 5 — Weather card (4/4 done)
 - ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
 - ✓ T1.22 WeatherFragment + ViewModel + icon mapping (done 2026-05-09)
 
-Phase 6 — Trip recording (4/5 done)
+Phase 6 — Trip recording (5/5 done)
 - ✓ T1.23 Room schema (TripEntity, TripPoint, TripDao, AppDb) (done 2026-05-09)
 - ✓ T1.24 TripRecorder state machine (done 2026-05-09)
 - ✓ T1.25 TripRepository (done 2026-05-09)
 - ✓ T1.26 TripCalendarView heatmap (done 2026-05-09)
-- ⏳ T1.27 (P2, Cx 8)
+- ✓ T1.27 TripsFragment + adapter (done 2026-05-09)
 
 Phase 7 — App grid (0/3 pending)
 - ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
@@ -82,8 +82,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–5 + T1.23–T1.26 done (26/49). Continue with `/start-task T1.27`
-(Phase 6 — Trip list UI / TripsAdapter wiring, Cx 8, P2).
+Phases 1–6 done (27/49). Continue with `/start-task T1.28`
+(Phase 7 — App grid scaffolding, Cx 8, P1).
 
 ### Backlog
 
@@ -91,6 +91,51 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.27 done (2026-05-09)** — `TripsFragment` was already scaffolded
+  (calendar on top, RecyclerView + ListAdapter + DiffUtil below, swipe-to-
+  delete, summary line) but three of the five ACs needed pinning:
+  • Day-label format. The fragment showed `"EEE, MMM d"`. Added
+    `Long.formatRelativeDay(nowMs, tz, locale)` in `UnitsFormatExt.kt`
+    (returns `Today` / `Yesterday` / `MMM dd`) and wired the fragment to
+    use it on init and on day-cell tap.
+  • Filter helpers. The ViewModel held `buildDistanceByDay` and a
+    `sameLocalDay` check that used `TimeUnit.DAYS.toMillis(1)` (DST-fragile).
+    Extracted both into `TripsFiltering.kt` as pure top-level helpers
+    (`filterTripsForDay` now uses `Calendar.add(DAY_OF_YEAR, 1)` so DST
+    boundaries are respected) and switched the ViewModel to call them.
+  • Empty-state copy. `R.string.trips_none` said "No trips this month" —
+    misleading now that the heatmap is per-day. Updated to "No trips" to
+    match the AC verbatim.
+  Tests added: `FormatExtTest` covers Today/Yesterday/MMM dd across local
+  TZs; `TripsFilteringTest` covers same-day filter (incl. midnight
+  boundary) + per-day distance grouping; `TripsAdapterTest` reflectively
+  pulls the DiffUtil callback off the `AsyncListDiffer` to assert
+  `areItemsTheSame` matches by trip id and `areContentsTheSame` flips on
+  distance changes; `TripsFragmentTest` walks compiled `fragment_trips.xml`
+  to assert calendar / trip_list / empty / month_label / summary IDs are
+  present, root is vertical, and the RecyclerView has `weight=1` (proves
+  the layout grows to fill the 60% right panel at 1024×600). All five ACs
+  pass; full unit-test suite green; `bpsai-pair arch check` clean across
+  the four touched source files and three new test files.
+
+- **Planning audit (2026-05-09)** — `/pc-plan` re-invoked on
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. Verified all 49 task
+  files exist on disk (T1.1–T1.49 contiguous) and that the CLI tracks all 49
+  across the two known plan IDs (`plan-2026-05-retro-launcher-sprint-1` ×13
+  and `plan-sprint-1-engage` ×36). No new tasks created — planning is
+  reconciled. Resynced three stale CLI statuses (T1.24, T1.25, T1.26) where
+  the file said `done` but the CLI still showed `failed` from earlier engage
+  runs (`bpsai-pair task update <id> --resync`). Trello not connected
+  (`bpsai-pair trello status` → "Not connected"); planning continues in
+  PM-agnostic mode. Next pending task is T1.27 — `/start-task T1.27` to
+  resume.
+
+- **T1.26 done** (auto-updated by hook)
+
+- **T1.25 done** (auto-updated by hook)
+
+- **T1.24 done** (auto-updated by hook)
 
 - **T1.26 done** (auto-updated by hook)
 

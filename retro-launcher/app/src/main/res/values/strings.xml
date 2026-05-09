@@ -29,7 +29,7 @@
 
     <!-- Trips -->
     <string name="trips_title">Trip History</string>
-    <string name="trips_none">No trips this month</string>
+    <string name="trips_none">No trips</string>
     <string name="trip_active_fmt">Trip %1$s · %2$s · %3$s avg</string>
     <string name="trips_summary_fmt">%1$d trips · %2$s this %3$s</string>
 

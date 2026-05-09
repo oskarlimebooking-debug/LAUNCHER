@@ -13,10 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
+import com.oskar.retrolauncher.util.formatRelativeDay
 import com.oskar.retrolauncher.util.metersToDisplay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class TripsFragment : Fragment(R.layout.fragment_trips) {
 
@@ -64,12 +62,11 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
             }
         }).attachToRecyclerView(list)
 
-        val dayFmt = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
-        monthLabel.text = dayFmt.format(Date(vm.selectedDayMs.value))
+        monthLabel.text = vm.selectedDayMs.value.formatRelativeDay()
 
         calendar.onDaySelected = { dayStartMs ->
             vm.selectDay(dayStartMs)
-            monthLabel.text = dayFmt.format(Date(dayStartMs))
+            monthLabel.text = dayStartMs.formatRelativeDay()
         }
 
         vm.distanceByDay.observe(viewLifecycleOwner) { byDay ->

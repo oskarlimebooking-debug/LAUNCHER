@@ -53,3 +53,21 @@ fun Long.formatHMHM(endMs: Long): String =
 
 fun Long.formatYMD(): String =
     SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(this))
+
+fun Long.formatRelativeDay(
+    nowMs: Long = System.currentTimeMillis(),
+    tz: java.util.TimeZone = java.util.TimeZone.getDefault(),
+    locale: Locale = Locale.getDefault(),
+): String {
+    val cal = java.util.Calendar.getInstance(tz, locale).apply { timeInMillis = this@formatRelativeDay }
+    val now = java.util.Calendar.getInstance(tz, locale).apply { timeInMillis = nowMs }
+    val sameYear = cal.get(java.util.Calendar.YEAR) == now.get(java.util.Calendar.YEAR)
+    val dayDelta = if (sameYear) {
+        cal.get(java.util.Calendar.DAY_OF_YEAR) - now.get(java.util.Calendar.DAY_OF_YEAR)
+    } else null
+    return when (dayDelta) {
+        0 -> "Today"
+        -1 -> "Yesterday"
+        else -> SimpleDateFormat("MMM dd", locale).apply { timeZone = tz }.format(Date(this))
+    }
+}

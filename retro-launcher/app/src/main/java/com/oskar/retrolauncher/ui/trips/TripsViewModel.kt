@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 /**
  * View-model for the heatmap-driven Trips screen. Surfaces:
@@ -38,8 +37,8 @@ class TripsViewModel : ViewModel() {
             App.trips.recentTrips.combine(_selectedDayMs) { trips, day -> trips to day }
                 .collect { (trips, day) ->
                     _recentTrips.postValue(trips)
-                    _distanceByDay.postValue(buildDistanceByDay(trips))
-                    _dayTrips.postValue(trips.filter { sameLocalDay(it.startMs, day) })
+                    _distanceByDay.postValue(TripsFiltering.groupDistanceByDay(trips))
+                    _dayTrips.postValue(TripsFiltering.filterTripsForDay(trips, day))
                 }
         }
     }
@@ -50,21 +49,6 @@ class TripsViewModel : ViewModel() {
 
     fun delete(trip: TripEntity) {
         viewModelScope.launch(Dispatchers.IO) { App.trips.delete(trip) }
-    }
-
-    private fun buildDistanceByDay(trips: List<TripEntity>): Map<Long, Double> {
-        if (trips.isEmpty()) return emptyMap()
-        val out = HashMap<Long, Double>()
-        for (t in trips) {
-            val key = startOfDayMs(t.startMs)
-            out[key] = (out[key] ?: 0.0) + t.distanceM
-        }
-        return out
-    }
-
-    private fun sameLocalDay(ms: Long, dayStartMs: Long): Boolean {
-        val end = dayStartMs + TimeUnit.DAYS.toMillis(1)
-        return ms in dayStartMs until end
     }
 
     private companion object {

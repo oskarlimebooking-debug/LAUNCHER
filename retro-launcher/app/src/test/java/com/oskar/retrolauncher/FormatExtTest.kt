@@ -4,12 +4,17 @@ import com.oskar.retrolauncher.data.prefs.Units
 import com.oskar.retrolauncher.util.formatDistance
 import com.oskar.retrolauncher.util.formatDuration
 import com.oskar.retrolauncher.util.formatDurationShort
+import com.oskar.retrolauncher.util.formatRelativeDay
 import com.oskar.retrolauncher.util.formatSpeed
 import com.oskar.retrolauncher.util.metersPerSecondToDisplay
 import com.oskar.retrolauncher.util.metersToDisplay
 import com.oskar.retrolauncher.util.tempCToDisplay
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
+import java.util.concurrent.TimeUnit
 
 class FormatExtTest {
 
@@ -118,5 +123,45 @@ class FormatExtTest {
     fun `formatSpeed zero is the edge case`() {
         assertEquals("0.0 km/h", formatSpeed(0.0, Units.METRIC))
         assertEquals("0.0 mph", formatSpeed(0.0, Units.IMPERIAL))
+    }
+
+    // ----- T1.27 AC2: formatRelativeDay returns Today / Yesterday / MMM dd -----
+
+    private fun startOfDayMs(year: Int, month0: Int, day: Int, tz: TimeZone): Long =
+        Calendar.getInstance(tz).apply {
+            clear()
+            set(year, month0, day, 0, 0, 0)
+        }.timeInMillis
+
+    @Test
+    fun `formatRelativeDay returns Today when same calendar day as now`() {
+        val tz = TimeZone.getTimeZone("UTC")
+        val today = startOfDayMs(2026, Calendar.MAY, 9, tz)
+        val now = today + TimeUnit.HOURS.toMillis(14)
+        assertEquals("Today", today.formatRelativeDay(now, tz, Locale.US))
+    }
+
+    @Test
+    fun `formatRelativeDay returns Yesterday for the previous calendar day`() {
+        val tz = TimeZone.getTimeZone("UTC")
+        val today = startOfDayMs(2026, Calendar.MAY, 9, tz)
+        val yesterday = today - TimeUnit.DAYS.toMillis(1)
+        assertEquals("Yesterday", yesterday.formatRelativeDay(today, tz, Locale.US))
+    }
+
+    @Test
+    fun `formatRelativeDay returns MMM dd for older dates`() {
+        val tz = TimeZone.getTimeZone("UTC")
+        val today = startOfDayMs(2026, Calendar.MAY, 9, tz)
+        val twoDaysAgo = startOfDayMs(2026, Calendar.MAY, 7, tz)
+        assertEquals("May 07", twoDaysAgo.formatRelativeDay(today, tz, Locale.US))
+    }
+
+    @Test
+    fun `formatRelativeDay returns MMM dd for future dates`() {
+        val tz = TimeZone.getTimeZone("UTC")
+        val today = startOfDayMs(2026, Calendar.MAY, 9, tz)
+        val tomorrow = startOfDayMs(2026, Calendar.MAY, 10, tz)
+        assertEquals("May 10", tomorrow.formatRelativeDay(today, tz, Locale.US))
     }
 }
