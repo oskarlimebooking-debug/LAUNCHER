@@ -24,9 +24,15 @@ interface TripDao {
     @Delete
     suspend fun delete(t: TripEntity)
 
+    @Query("DELETE FROM trips WHERE id = :id")
+    suspend fun deleteById(id: Long): Int
+
     @Insert
     suspend fun insertPoints(points: List<TripPoint>)
 
     @Query("SELECT * FROM trip_points WHERE tripId = :id ORDER BY tsMs ASC")
     suspend fun points(id: Long): List<TripPoint>
+
+    @Query("SELECT * FROM trip_points WHERE tripId = :id ORDER BY tsMs ASC")
+    fun pointsFlow(id: Long): Flow<List<TripPoint>>
 }

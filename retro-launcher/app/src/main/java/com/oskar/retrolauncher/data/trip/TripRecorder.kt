@@ -48,6 +48,9 @@ class TripRecorder(
     private val _live = MutableStateFlow<LiveStats?>(null)
     val live: StateFlow<LiveStats?> = _live
 
+    private val _activeTrip = MutableStateFlow<TripEntity?>(null)
+    val activeTrip: StateFlow<TripEntity?> = _activeTrip
+
     private var enabled = true
     private var startMs = 0L
     private var detectStartMs = 0L
@@ -161,6 +164,20 @@ class TripRecorder(
             avgSpeedMs = avg,
             maxSpeedMs = maxSpeed.toDouble(),
         )
+        _activeTrip.value = if (_state.value == State.RECORDING) {
+            TripEntity(
+                id = 0L,
+                startMs = startMs,
+                endMs = tsMs,
+                distanceM = distance,
+                avgSpeedMs = avg,
+                maxSpeedMs = maxSpeed.toDouble(),
+                startLabel = null,
+                endLabel = null,
+            )
+        } else {
+            null
+        }
     }
 
     private suspend fun end(s: LocationSample) {
@@ -239,6 +256,7 @@ class TripRecorder(
     private fun reset() {
         _state.value = State.IDLE
         _live.value = null
+        _activeTrip.value = null
         startMs = 0L
         detectStartMs = 0L
         stopStartMs = 0L

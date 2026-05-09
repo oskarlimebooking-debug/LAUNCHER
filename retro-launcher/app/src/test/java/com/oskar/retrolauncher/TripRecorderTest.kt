@@ -44,8 +44,17 @@ class TripRecorderTest {
             if (idx >= 0) trips[idx] = t
         }
         override suspend fun delete(t: TripEntity) { trips.removeAll { it.id == t.id } }
+        override suspend fun deleteById(id: Long): Int {
+            val before = trips.size
+            trips.removeAll { it.id == id }
+            points.removeAll { it.tripId == id }
+            return before - trips.size
+        }
         override suspend fun insertPoints(points: List<TripPoint>) { this.points.addAll(points) }
         override suspend fun points(id: Long): List<TripPoint> = points.filter { it.tripId == id }
+        override fun pointsFlow(id: Long) = flow<List<TripPoint>> {
+            emit(points.filter { it.tripId == id })
+        }
     }
 
     private fun sample(t: Long, lat: Double = 0.0, lon: Double = 0.0, mps: Float = 0f) =
@@ -70,6 +79,27 @@ class TripRecorderTest {
         feed(flow, (0..30).asSequence().map { sample(it * 1000L, mps = 0.5f) })
         assertEquals(TripRecorder.State.IDLE, rec.state.value)
         assertTrue(dao.trips.isEmpty())
+    }
+
+    @Test
+    fun `activeTrip is null when idle and populated when recording then null after stop`() = runTest {
+        val flow = MutableSharedFlow<LocationSample>(replay = 0, extraBufferCapacity = 64)
+        val dao = FakeDao()
+        val rec = TripRecorder(backgroundScope, dao, flow)
+        assertNull("idle → null", rec.activeTrip.value)
+
+        // Sustained motion for 12 s → RECORDING.
+        feed(flow, (0..12).asSequence().map { sample(it * 1000L, lat = it * 0.0001, mps = 10f) })
+        assertEquals(TripRecorder.State.RECORDING, rec.state.value)
+        val active = rec.activeTrip.value
+        assertNotNull("recording → populated", active)
+        assertEquals(0L, active!!.id)
+        assertEquals(0L, active.startMs)
+
+        // 70 s stop → trip ends, recorder returns to IDLE.
+        feed(flow, (0 until 70).asSequence().map { sample(13_000L + it * 1000L, lat = 12 * 0.0001, mps = 0f) })
+        assertEquals(TripRecorder.State.IDLE, rec.state.value)
+        assertNull("post-trip → null", rec.activeTrip.value)
     }
 
     @Test

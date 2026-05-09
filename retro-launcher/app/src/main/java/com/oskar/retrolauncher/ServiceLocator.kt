@@ -74,7 +74,9 @@ class ServiceLocator(private val app: Application) {
 
     val appList: AppListRepository by lazy { AppListRepository(app, app.packageManager) }
 
-    val trips: TripRepository by lazy { TripRepository(db.trips()) }
+    val trips: TripRepository by lazy {
+        TripRepository(dao = db.trips(), activeTripFlow = tripRecorder.activeTrip)
+    }
 
     val appScope: CoroutineScope by lazy {
         CoroutineScope(Dispatchers.Default + SupervisorJob())
