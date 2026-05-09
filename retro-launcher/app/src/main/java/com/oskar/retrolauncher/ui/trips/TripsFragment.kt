@@ -13,10 +13,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
-import com.oskar.retrolauncher.data.prefs.Units
 import com.oskar.retrolauncher.util.metersToDisplay
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class TripsFragment : Fragment(R.layout.fragment_trips) {
@@ -25,7 +24,6 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
     private lateinit var adapter: TripsAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val title = view.findViewById<TextView>(R.id.trips_title)
         val monthLabel = view.findViewById<TextView>(R.id.month_label)
         val calendar = view.findViewById<TripCalendarView>(R.id.calendar)
         val summary = view.findViewById<TextView>(R.id.summary)
@@ -36,7 +34,6 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
         list.layoutManager = LinearLayoutManager(requireContext())
         list.adapter = adapter
 
-        // Swipe to delete
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
             private val redPaint = Paint().apply { color = Color.parseColor("#332222") }
 
@@ -67,33 +64,23 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
             }
         }).attachToRecyclerView(list)
 
-        val monthFmt = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+        val dayFmt = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+        monthLabel.text = dayFmt.format(Date(vm.selectedDayMs.value))
 
-        vm.month.let {
-            val cal = Calendar.getInstance().apply {
-                clear(); set(it.value.year, it.value.month, 1)
-            }
-            calendar.setMonth(cal)
-            monthLabel.text = monthFmt.format(cal.time)
+        calendar.onDaySelected = { dayStartMs ->
+            vm.selectDay(dayStartMs)
+            monthLabel.text = dayFmt.format(Date(dayStartMs))
         }
 
-        calendar.onDaySelected = { day -> vm.selectDay(day) }
+        vm.distanceByDay.observe(viewLifecycleOwner) { byDay ->
+            calendar.setDistances(byDay)
+        }
 
-        vm.monthTrips.observe(viewLifecycleOwner) { trips ->
-            // Build set of days in this month with trips
-            val sel = vm.month.value
-            val daysWithTrips = trips.mapNotNull { trip ->
-                val cal = Calendar.getInstance().apply { timeInMillis = trip.startMs }
-                if (cal.get(Calendar.YEAR) == sel.year && cal.get(Calendar.MONTH) == sel.month) {
-                    cal.get(Calendar.DAY_OF_MONTH)
-                } else null
-            }.toSet()
-            calendar.setTripDays(daysWithTrips)
-
+        vm.recentTrips.observe(viewLifecycleOwner) { trips ->
             val units = App.settings.units
             val totalDist = trips.sumOf { it.distanceM }
             summary.text = if (trips.isEmpty()) "" else
-                "${trips.size} trips · ${totalDist.metersToDisplay(units)} this month"
+                "${trips.size} trips · ${totalDist.metersToDisplay(units)} last 90 days"
         }
 
         vm.dayTrips.observe(viewLifecycleOwner) { dayTrips ->

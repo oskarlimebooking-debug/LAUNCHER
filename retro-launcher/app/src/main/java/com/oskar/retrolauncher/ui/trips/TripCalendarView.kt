@@ -5,131 +5,213 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
-import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.util.dp
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
- * Horizontal day strip for the current month. Today highlighted in accent.
- * Days with trips show a small accent dot underneath the number.
+ * Heatmap calendar of the last 91 days (7 rows × 13 columns). Today sits in the
+ * bottom-right; older days fill rightward-then-up. Cells are color-mapped by
+ * total distance driven that day. Tapping a cell calls [onDaySelected] with
+ * the local start-of-day in millis.
+ *
+ * Drawing path is allocation-free: [cellPaint], [todayBorderPaint], [emptyPaint]
+ * and [cellRect] are all initialized once and mutated in [onDraw].
  */
 class TripCalendarView @JvmOverloads constructor(
-    ctx: Context, attrs: AttributeSet? = null
+    ctx: Context, attrs: AttributeSet? = null,
 ) : View(ctx, attrs) {
 
-    private val accent = Color.parseColor("#FF8500")
-    private val cardColor = Color.parseColor("#1F1F1F")
-    private val textColor = Color.WHITE
-    private val dimText = Color.parseColor("#888888")
+    /** today’s start-of-day in local TZ; refreshed at construction + on visibility change. */
+    private var todayStartMs: Long = computeStartOfTodayMs()
+
+    /** Map<dayStartMs, totalDistanceMeters>. Days outside the map render as empty. */
+    private var distancesByDay: Map<Long, Double> = emptyMap()
+
+    /** Optional override for max distance used to normalize the heatmap. */
+    private var maxDistanceMHint: Double = 0.0
+
+    /** Selected cell index in [0, 90]. -1 = none selected. */
+    private var selectedIdx: Int = TOTAL - 1   // default to today
 
     private val cellPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val dotPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent }
-    private val dayNumPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 14f.dp(resources)
-        textAlign = Paint.Align.CENTER
-        color = textColor
+    private val emptyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#1F1F1F")
     }
-    private val dayNamePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-        textSize = 9f.dp(resources)
-        textAlign = Paint.Align.CENTER
-        color = dimText
+    private val todayBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#FF8500")
+        style = Paint.Style.STROKE
+        strokeWidth = 2f.dp(resources)
     }
-
+    private val selectedBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = 1.5f.dp(resources)
+    }
     private val cellRect = RectF()
 
-    private var daysInMonth = 31
-    private var todayDay = 1
-    private var selectedDay = 1
-    private var tripDays: Set<Int> = emptySet()
-    private val baseCal: Calendar = Calendar.getInstance()
-    private val dayNameFmt = SimpleDateFormat("EEE", Locale.getDefault())
-
-    var onDaySelected: ((day: Int) -> Unit)? = null
+    /** Called with the start-of-day millis (local TZ) of the tapped cell. */
+    var onDaySelected: ((dayStartMs: Long) -> Unit)? = null
 
     init {
-        val now = Calendar.getInstance()
-        daysInMonth = now.getActualMaximum(Calendar.DAY_OF_MONTH)
-        todayDay = now.get(Calendar.DAY_OF_MONTH)
-        selectedDay = todayDay
-        baseCal.timeInMillis = now.timeInMillis
+        setLayerType(LAYER_TYPE_HARDWARE, null)
     }
 
-    fun setMonth(cal: Calendar) {
-        baseCal.timeInMillis = cal.timeInMillis
-        daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-        val now = Calendar.getInstance()
-        todayDay = if (sameMonth(cal, now)) now.get(Calendar.DAY_OF_MONTH) else -1
-        selectedDay = if (todayDay > 0) todayDay else 1
+    /**
+     * Replace the heatmap data. Keys must be local start-of-day millis. The view
+     * normalizes color intensity against the largest distance in the set.
+     */
+    fun setDistances(byDay: Map<Long, Double>) {
+        distancesByDay = byDay
+        maxDistanceMHint = byDay.values.maxOrNull() ?: 0.0
         invalidate()
     }
 
-    fun setTripDays(days: Set<Int>) {
-        tripDays = days
+    /** Override the heatmap normalization ceiling. Pass 0 to auto-compute from data. */
+    fun setMaxDistanceM(maxM: Double) {
+        maxDistanceMHint = maxM
         invalidate()
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val widthSize = MeasureSpec.getSize(widthMeasureSpec).coerceAtLeast(MIN_WIDTH_PX)
+        val cellSide = widthSize / COLS
+        val desiredHeight = cellSide * ROWS
+        val measuredHeight = when (MeasureSpec.getMode(heightMeasureSpec)) {
+            MeasureSpec.EXACTLY -> MeasureSpec.getSize(heightMeasureSpec)
+            MeasureSpec.AT_MOST -> minOf(desiredHeight, MeasureSpec.getSize(heightMeasureSpec))
+            else -> desiredHeight
+        }
+        setMeasuredDimension(cellSide * COLS, measuredHeight)
     }
 
     override fun onDraw(canvas: Canvas) {
-        if (daysInMonth <= 0) return
-        val cellW = width.toFloat() / daysInMonth
-        val pad = 2f.dp(resources)
-        val baseDate = baseCal.clone() as Calendar
-        for (day in 1..daysInMonth) {
-            val cx = cellW * (day - 0.5f)
-            cellRect.set(cellW * (day - 1) + pad, 0f, cellW * day - pad, height.toFloat())
-            val isToday = day == todayDay
-            val isSelected = day == selectedDay
-            val isTripDay = tripDays.contains(day)
-            cellPaint.color = when {
-                isSelected -> accent
-                isTripDay -> cardColor
-                else -> Color.TRANSPARENT
-            }
-            if (cellPaint.color != Color.TRANSPARENT) {
-                canvas.drawRoundRect(cellRect, 8f.dp(resources), 8f.dp(resources), cellPaint)
-            }
+        if (width == 0 || height == 0) return
+        val cellSide = (width / COLS).toFloat()
+        val pad = 1f.dp(resources)
+        val maxDist = if (maxDistanceMHint > 0.0) maxDistanceMHint else 1.0
 
-            // Day name (Mon/Tue/...)
-            baseDate.set(Calendar.DAY_OF_MONTH, day)
-            val name = dayNameFmt.format(baseDate.time).take(3)
-            dayNamePaint.color = if (isSelected) Color.parseColor("#22000000").let { Color.WHITE } else dimText
-            canvas.drawText(name, cx, 14f.dp(resources), dayNamePaint)
+        var todayIdx = TOTAL - 1
+        for (idx in 0 until TOTAL) {
+            val col = idx % COLS
+            val row = idx / COLS
+            cellRect.set(
+                col * cellSide + pad,
+                row * cellSide + pad,
+                (col + 1) * cellSide - pad,
+                (row + 1) * cellSide - pad,
+            )
 
-            // Day number
-            dayNumPaint.color = when {
-                isSelected -> Color.BLACK
-                isToday -> accent
-                else -> textColor
-            }
-            canvas.drawText(day.toString(), cx, 30f.dp(resources), dayNumPaint)
+            val dayMs = dayStartMsForIndex(idx)
+            val dist = distancesByDay[dayMs] ?: 0.0
 
-            // Trip indicator dot
-            if (isTripDay && !isSelected) {
-                canvas.drawCircle(cx, 40f.dp(resources), 2f.dp(resources), dotPaint)
-            }
+            cellPaint.color = if (dist <= 0.0) emptyPaint.color else heatColorAt(dist, maxDist)
+            canvas.drawRoundRect(cellRect, CORNER_RADIUS_PX, CORNER_RADIUS_PX, cellPaint)
+        }
+
+        // Today border drawn last so it sits on top of fills.
+        val tCol = todayIdx % COLS
+        val tRow = todayIdx / COLS
+        val inset = todayBorderPaint.strokeWidth / 2f
+        cellRect.set(
+            tCol * cellSide + pad + inset,
+            tRow * cellSide + pad + inset,
+            (tCol + 1) * cellSide - pad - inset,
+            (tRow + 1) * cellSide - pad - inset,
+        )
+        canvas.drawRoundRect(cellRect, CORNER_RADIUS_PX, CORNER_RADIUS_PX, todayBorderPaint)
+
+        // Selected cell border (skip if the selection equals today — today already has a border).
+        if (selectedIdx in 0 until TOTAL && selectedIdx != todayIdx) {
+            val sCol = selectedIdx % COLS
+            val sRow = selectedIdx / COLS
+            val sInset = selectedBorderPaint.strokeWidth / 2f
+            cellRect.set(
+                sCol * cellSide + pad + sInset,
+                sRow * cellSide + pad + sInset,
+                (sCol + 1) * cellSide - pad - sInset,
+                (sRow + 1) * cellSide - pad - sInset,
+            )
+            canvas.drawRoundRect(cellRect, CORNER_RADIUS_PX, CORNER_RADIUS_PX, selectedBorderPaint)
         }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action != MotionEvent.ACTION_UP) return super.onTouchEvent(event)
-        val cellW = width.toFloat() / daysInMonth
-        val day = (event.x / cellW).toInt() + 1
-        if (day in 1..daysInMonth) {
-            selectedDay = day
-            onDaySelected?.invoke(day)
-            invalidate()
-            performClick()
-        }
+        val cellSide = width / COLS.toFloat()
+        if (cellSide <= 0f) return false
+        if (event.x < 0f || event.y < 0f) return false
+        val col = (event.x / cellSide).toInt()
+        val row = (event.y / cellSide).toInt()
+        if (col !in 0 until COLS || row !in 0 until ROWS) return false
+        val idx = row * COLS + col
+        selectedIdx = idx
+        onDaySelected?.invoke(dayStartMsForIndex(idx))
+        invalidate()
+        performClick()
         return true
     }
 
     override fun performClick(): Boolean = super.performClick()
 
-    private fun sameMonth(a: Calendar, b: Calendar): Boolean =
-        a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
-            a.get(Calendar.MONTH) == b.get(Calendar.MONTH)
+    /**
+     * Heatmap mapping in [0, 1] from cool (blue) to warm (red). Empty (0 distance)
+     * is handled separately in [onDraw] by [emptyPaint].
+     */
+    @VisibleForTesting
+    fun heatColorAt(distanceM: Double, maxM: Double = if (maxDistanceMHint > 0) maxDistanceMHint else 60_000.0): Int {
+        val t = (distanceM / maxM).coerceIn(0.0, 1.0).toFloat()
+        // Three-stop gradient: blue → orange → red.
+        return if (t < 0.5f) {
+            lerpColor(BLUE, ORANGE, t / 0.5f)
+        } else {
+            lerpColor(ORANGE, RED, (t - 0.5f) / 0.5f)
+        }
+    }
+
+    private fun dayStartMsForIndex(idx: Int): Long {
+        // idx 0 = oldest (top-left = 90 days ago). idx TOTAL-1 = today (bottom-right).
+        val daysBack = (TOTAL - 1) - idx
+        return todayStartMs - TimeUnit.DAYS.toMillis(daysBack.toLong())
+    }
+
+    @VisibleForTesting
+    val cellPaintForTest: Paint get() = cellPaint
+
+    @VisibleForTesting
+    val cellRectForTest: RectF get() = cellRect
+
+    @VisibleForTesting
+    val todayBorderPaintForTest: Paint get() = todayBorderPaint
+
+    companion object {
+        const val ROWS = 7
+        const val COLS = 13
+        const val TOTAL = ROWS * COLS  // 91 days
+        val CORNER_RADIUS_PX get() = 3f
+        const val MIN_WIDTH_PX = 13   // 1px per col fallback so onMeasure never divides by zero
+        val BLUE = Color.parseColor("#2563EB")
+        val ORANGE = Color.parseColor("#FF8500")
+        val RED = Color.parseColor("#DC2626")
+
+        fun lerpColor(a: Int, b: Int, t: Float): Int {
+            val r = (Color.red(a) + (Color.red(b) - Color.red(a)) * t).toInt()
+            val g = (Color.green(a) + (Color.green(b) - Color.green(a)) * t).toInt()
+            val bl = (Color.blue(a) + (Color.blue(b) - Color.blue(a)) * t).toInt()
+            return Color.rgb(r, g, bl)
+        }
+
+        fun computeStartOfTodayMs(): Long {
+            val cal = Calendar.getInstance()
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
+        }
+    }
 }

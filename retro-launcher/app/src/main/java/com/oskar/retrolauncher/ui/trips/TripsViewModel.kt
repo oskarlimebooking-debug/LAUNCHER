@@ -7,67 +7,76 @@ import androidx.lifecycle.viewModelScope
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.data.trip.TripEntity
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalCoroutinesApi::class)
+/**
+ * View-model for the heatmap-driven Trips screen. Surfaces:
+ *   - [recentTrips]: last 91 days of trips (drives the heatmap).
+ *   - [dayTrips]: trips that began on [selectedDayMs] (drives the list).
+ *   - [distanceByDay]: per-day total distance, keyed by start-of-day millis.
+ */
 class TripsViewModel : ViewModel() {
 
-    data class MonthSelection(val year: Int, val month: Int) {
-        fun rangeMs(): Pair<Long, Long> {
-            val from = Calendar.getInstance().apply {
-                clear(); set(year, month, 1, 0, 0)
-            }.timeInMillis
-            val to = Calendar.getInstance().apply {
-                timeInMillis = from
-                add(Calendar.MONTH, 1)
-            }.timeInMillis
-            return from to to
-        }
-    }
+    private val _selectedDayMs = MutableStateFlow(startOfTodayMs())
+    val selectedDayMs: kotlinx.coroutines.flow.StateFlow<Long> = _selectedDayMs
 
-    private val now = Calendar.getInstance()
-    private val _month = MutableStateFlow(MonthSelection(now.get(Calendar.YEAR), now.get(Calendar.MONTH)))
-    private val _selectedDay = MutableStateFlow(now.get(Calendar.DAY_OF_MONTH))
-
-    private val _monthTrips = MutableLiveData<List<TripEntity>>(emptyList())
-    val monthTrips: LiveData<List<TripEntity>> = _monthTrips
+    private val _recentTrips = MutableLiveData<List<TripEntity>>(emptyList())
+    val recentTrips: LiveData<List<TripEntity>> = _recentTrips
 
     private val _dayTrips = MutableLiveData<List<TripEntity>>(emptyList())
     val dayTrips: LiveData<List<TripEntity>> = _dayTrips
 
-    val month: kotlinx.coroutines.flow.StateFlow<MonthSelection> = _month
-    val selectedDay: kotlinx.coroutines.flow.StateFlow<Int> = _selectedDay
+    private val _distanceByDay = MutableLiveData<Map<Long, Double>>(emptyMap())
+    val distanceByDay: LiveData<Map<Long, Double>> = _distanceByDay
 
     init {
-        // Stream of trips for the currently selected month
-        val monthFlow = _month.flatMapLatest { sel ->
-            val (from, to) = sel.rangeMs()
-            App.trips.byRange(from, to)
-        }
         viewModelScope.launch(Dispatchers.Default) {
-            // Combine month-trips + selected day so day list updates whenever either changes.
-            monthFlow.combine(_selectedDay) { trips, day -> trips to day }
-                .combine(_month) { (trips, day), sel -> Triple(trips, day, sel) }
-                .collect { (trips, day, sel) ->
-                    _monthTrips.postValue(trips)
-                    _dayTrips.postValue(trips.filter { trip ->
-                        val cal = Calendar.getInstance().apply { timeInMillis = trip.startMs }
-                        cal.get(Calendar.YEAR) == sel.year &&
-                            cal.get(Calendar.MONTH) == sel.month &&
-                            cal.get(Calendar.DAY_OF_MONTH) == day
-                    })
+            App.trips.recentTrips.combine(_selectedDayMs) { trips, day -> trips to day }
+                .collect { (trips, day) ->
+                    _recentTrips.postValue(trips)
+                    _distanceByDay.postValue(buildDistanceByDay(trips))
+                    _dayTrips.postValue(trips.filter { sameLocalDay(it.startMs, day) })
                 }
         }
     }
 
-    fun selectDay(day: Int) { _selectedDay.value = day }
+    fun selectDay(dayStartMs: Long) {
+        _selectedDayMs.value = dayStartMs
+    }
 
     fun delete(trip: TripEntity) {
         viewModelScope.launch(Dispatchers.IO) { App.trips.delete(trip) }
+    }
+
+    private fun buildDistanceByDay(trips: List<TripEntity>): Map<Long, Double> {
+        if (trips.isEmpty()) return emptyMap()
+        val out = HashMap<Long, Double>()
+        for (t in trips) {
+            val key = startOfDayMs(t.startMs)
+            out[key] = (out[key] ?: 0.0) + t.distanceM
+        }
+        return out
+    }
+
+    private fun sameLocalDay(ms: Long, dayStartMs: Long): Boolean {
+        val end = dayStartMs + TimeUnit.DAYS.toMillis(1)
+        return ms in dayStartMs until end
+    }
+
+    private companion object {
+        fun startOfTodayMs(): Long = startOfDayMs(System.currentTimeMillis())
+
+        fun startOfDayMs(ms: Long): Long {
+            val cal = Calendar.getInstance().apply {
+                timeInMillis = ms
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            return cal.timeInMillis
+        }
     }
 }
