@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pure dark base -->
+    <color name="bg">#000000</color>
+    <color name="card">#1F1F1F</color>
+    <color name="card_alt">#2A2A2A</color>
+    <color name="divider">#333333</color>
+
+    <!-- Mini AA's accent -->
+    <color name="accent">#FF8500</color>
+    <color name="accent_dim">#B25A00</color>
+
+    <!-- Text -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3B3B3</color>
+    <color name="text_tertiary">#888888</color>
+    <color name="text_disabled">#555555</color>
+
+    <!-- Status -->
+    <color name="track">#1F1F1F</color>
+    <color name="warn">#FFC107</color>
+    <color name="err">#FF5252</color>
+    <color name="ok">#3DDC84</color>
+</resources>

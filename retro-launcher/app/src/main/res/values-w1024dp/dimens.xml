@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 1024×600 head-unit specific dimens -->
+    <dimen name="rail_width">60dp</dimen>
+    <dimen name="status_bar_height">60dp</dimen>
+    <dimen name="tile_corner">16dp</dimen>
+    <dimen name="tile_padding">16dp</dimen>
+    <dimen name="media_tile_size">240dp</dimen>
+    <dimen name="weather_tile_height">110dp</dimen>
+    <dimen name="speed_text">28sp</dimen>
+    <dimen name="text_speed_xl">64sp</dimen>
+    <dimen name="temp_text">36sp</dimen>
+    <dimen name="track_title">18sp</dimen>
+    <dimen name="grid_icon">56dp</dimen>
+    <dimen name="grid_label">12sp</dimen>
+
+    <!-- Layout grid dimens (T1.4 AC) -->
+    <dimen name="gutter">12dp</dimen>
+    <dimen name="corner_lg">24dp</dimen>
+    <dimen name="corner_md">16dp</dimen>
+    <dimen name="panel_left_min_width">300dp</dimen>
+</resources>

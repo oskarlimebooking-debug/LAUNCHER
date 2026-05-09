@@ -1,0 +1,78 @@
+id: plan-2026-05-retro-launcher-sprint-1
+title: Retro Launcher v0.1 → v0.3 (full implementation)
+type: feature
+status: in_progress
+created_at: '2026-05-05T12:15:00.000000'
+sprint: 1
+backlog_path: plans/backlogs/backlog-sprint-1-retro-launcher.md
+description: 'Full Sprint-1 backlog for the Retro Launcher: an Android Auto-style
+  head-unit launcher targeting Android 6 (API 23), 1024x600 landscape, rooted, no
+  Google Play Services. Implements v0.1 MVP (scaffolding + 6 features), v0.2 polish
+  (trip detail, GPX, drag-reorder, themes, steering-wheel keys), and v0.3 system-build
+  features (platform-signed, VirtualDisplay embedding).
+
+  '
+phases:
+- id: 1
+  name: Project scaffolding
+  tasks: 5
+  complexity: 23
+- id: 2
+  name: App shell
+  tasks: 5
+  complexity: 26
+- id: 3
+  name: Location service and speedometer
+  tasks: 4
+  complexity: 34
+- id: 4
+  name: Media player
+  tasks: 4
+  complexity: 34
+- id: 5
+  name: Weather card
+  tasks: 4
+  complexity: 21
+- id: 6
+  name: Trip recording
+  tasks: 5
+  complexity: 42
+- id: 7
+  name: App grid
+  tasks: 3
+  complexity: 21
+- id: 8
+  name: Settings and first-run
+  tasks: 4
+  complexity: 21
+- id: 9
+  name: Testing and build
+  tasks: 4
+  complexity: 24
+- id: 10
+  name: v0.2 polish
+  tasks: 5
+  complexity: 36
+- id: 11
+  name: v0.3 system-build features
+  tasks: 6
+  complexity: 71
+totals:
+  tasks: 49
+  complexity: 353
+  human_gated: 2
+  external_tools: 2
+priorities:
+  P0: 9
+  P1: 22
+  P2: 18
+skills:
+- planning-with-pm
+- implementing-with-tdd
+- architecting-modules
+notes: 'Use `bpsai-pair engage plans/backlogs/backlog-sprint-1-retro-launcher.md --dry-run`
+  to validate the parser sees what we expect, then run without --dry-run to start
+  the autonomous sprint. Engage will create branch engage/backlog-sprint-1-retro-launcher
+  and process phases sequentially with up to --max-parallel concurrency per phase.
+
+  '

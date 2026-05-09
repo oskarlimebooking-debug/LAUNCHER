@@ -1,0 +1,683 @@
+# Current State
+
+> Last updated: 2026-05-09 (planning audit — T1.15 last closed)
+
+## Active Plan
+
+**Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
+**Status:** T1.15 done — MediaNotificationListener metadata pipeline now extracts album; metadataToMediaState extracted as a pure transform with 7 unit tests covering AC3/AC4/AC5; 110/110 tests green
+**Current Sprint:** 1 (T1.x)
+**Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
+
+## Current Focus
+
+Sprint 1 covers the full Retro Launcher implementation per `headunit-launcher-spec.md`:
+49 tasks across 11 phases, complexity 353, 2 human-gated, P0=9 / P1=22 / P2=18.
+Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing/build,
+10 is v0.2 polish, 11 is v0.3 system-build embedding (platform-signed only).
+
+## Task Status
+
+### Active Sprint
+
+- ✓ T1.1 Bootstrap Gradle project structure (done 2026-05-05)
+- ✓ T1.2 Author app/build.gradle.kts with flavors (done 2026-05-05)
+- ✓ T1.3 Author AndroidManifest.xml (done 2026-05-05)
+- ✓ T1.4 Resource bundles: themes, colors, strings, dimens (done 2026-05-05)
+- ✓ T1.5 Application icon and adaptive icon fallback (done 2026-05-05)
+- ✓ T1.6 App.kt service locator and Application class (done 2026-05-06)
+- ✓ T1.7 MainActivity and activity_main.xml (done 2026-05-06)
+- ✓ T1.8 HomeFragment with ViewPager2 right panel (done 2026-05-06)
+- ✓ T1.9 StatusBarFragment (clock, speed, trip stats, drawer) (done 2026-05-06)
+- ✓ T1.10 Util extensions: ColorExt, FormatExt, ViewExt (done 2026-05-06)
+- ✓ T1.11 LocationService foreground service (done 2026-05-06)
+- ✓ T1.12 SpeedFilter with Kalman-style smoothing (done 2026-05-06)
+- ✓ T1.13 SpeedometerView custom drawing (done 2026-05-06)
+- ✓ T1.14 SpeedFragment + ViewModel (done 2026-05-06)
+- ✓ T1.15 MediaNotificationListener service (done 2026-05-06)
+- ⏳ T1.16 (next; check backlog)
+- T1.16 – T1.49 pending
+
+The remaining 48 tasks are tracked in
+`.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
+backlog doc; `bpsai-pair task list` is currently empty (engage hasn't been
+run end-to-end). Continue with `/start-task T1.16`.
+
+### Backlog
+
+Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
+button, day/night theme auto-switch from sun position. See spec section 21.4.
+
+## What Was Just Done
+
+- **2026-05-09 planning audit (`/pc-plan`)** — re-ran the Navigator pre-flight on
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. Plan
+  `plan-2026-05-retro-launcher-sprint-1` already exists (in_progress, 49 tasks,
+  cx 353), and every task file `T1.1`–`T1.49` is on disk under
+  `.paircoder/tasks/` with matching frontmatter, ACs, and `depends_on`. Spot
+  checked T1.16 (next) and T1.46 (deepest dep chain) — both faithful to the
+  backlog text. Trello is not connected (`bpsai-pair trello status` reports
+  disconnected), so engagement uses the file-based plan only. Budget pre-flight
+  clean. No re-creation needed; next action is `/start-task T1.16`.
+- **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
+
+### Session: 2026-05-06 — T1.15 MediaNotificationListener service (DONE)
+
+- The listener was already implemented end-to-end from earlier scaffolding —
+  audited against T1.15 ACs. Findings before this session:
+  - AC1 ✓ — wizard + settings both launch `ACTION_NOTIFICATION_LISTENER_SETTINGS`,
+    and `MediaNotificationListener.isEnabled(ctx)` reads `enabled_notification_listeners`
+    from `Settings.Secure`.
+  - AC2 ✓ (manual) — generic `MediaSessionManager.getActiveSessions(...)` catches
+    any app posting a `MediaStyle` notification (Spotify / YouTube Music /
+    stock all qualify).
+  - AC3 ❌ — `pushState` extracted title / artist / duration / art but **NOT
+    album** despite the AC text spelling out "title, artist, **album**, art
+    bitmap, duration".
+  - AC4 ✓ — `playing`, `position`, `speed` were already pulled from PlaybackState.
+  - AC5 ✓ — `?.` chaining + `onSessionDestroyed` / `onListenerDisconnected`
+    null-out the controller cleanly.
+- Closed the AC3 gap and made the metadata pipeline testable:
+  - Added `album: String?` to `MediaState` (default null, slotted between
+    `artist` and `durationMs`). All MediaState callers use named/default args
+    or no-arg construction so no caller broke.
+  - Extracted `metadataToMediaState(metadata, playbackState, packageName)` —
+    a top-level pure function that maps a `MediaMetadata?` + `PlaybackState?`
+    into `MediaState`. The listener's `pushState` now collapses to a single
+    line: `App.media.update(metadataToMediaState(ctrl.metadata, ctrl.playbackState, ctrl.packageName))`.
+- TDD: wrote 7 failing Robolectric tests BEFORE the refactor — verified red via
+  `Unresolved reference: metadataToMediaState`. Tests cover:
+  - **AC3**: full metadata extraction (title, artist, **album**, duration, art);
+    `METADATA_KEY_ALBUM_ART` → `METADATA_KEY_ART` fallback when ALBUM_ART is missing.
+  - **AC4**: PlaybackState produces `playing/positionMs/speed/positionAtMs`;
+    PAUSED state reports `playing=false`.
+  - **AC5**: all-null inputs produce a safe empty state (no NPE; isEmpty true,
+    speed defaults to 1f, no crash).
+  - **AC1 contract**: `isEnabled(ctx)` returns false when the secure setting
+    is absent and true when our package appears in the listener allowlist
+    (manipulated via `Settings.Secure.putString` under Robolectric).
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 110/110 (was 103/103; +7
+    new MediaNotificationListenerTest)
+  - `bpsai-pair arch check` clean on the listener (135 lines), `MediaState.kt`,
+    and the new test file (118 lines)
+- Files touched:
+  - `data/media/MediaState.kt` (+`album` field)
+  - `service/MediaNotificationListener.kt` (extract `metadataToMediaState`;
+    `pushState` collapses to one call)
+  - `test/.../MediaNotificationListenerTest.kt` (new; 7 tests)
+- AC2 note: detection across Spotify / YouTube Music / stock is a runtime
+  manual check — the implementation uses generic `MediaSessionManager` so it
+  works for any app emitting a MediaStyle notification. Spec section 9.3
+  validates this approach. Confirm during the v0.1 device smoke pass.
+
+### Session: 2026-05-06 — T1.14 SpeedFragment + ViewModel (DONE)
+
+- Renamed `SpeedViewModel.Snapshot` → top-level `SpeedUiState` (matches AC text
+  "ViewModel exposes `LiveData<SpeedUiState>`"). Added `kmh: Float` (canonical,
+  drives the arc / sweep), `units: Units`, and `thresholdKmh: Float` so the
+  view can re-bind unit + colour-band breakpoint with no fragment recreate.
+  Existing `display: Float` and `unitLabel: String` fields kept the same — so
+  StatusBarFragment's `snap.display` access keeps working unchanged.
+- Extracted `produceSpeedUiState(sample, units, thresholdKmh): SpeedUiState`
+  as a top-level pure function. The VM just folds latest values through it on
+  every emission. Five unit tests cover the transform: null sample → zero,
+  metric km/h conversion, imperial mph conversion, threshold pass-through,
+  data-class equality.
+- VM `init {}` now collects `App.location.last.combine(merged settings keys)`,
+  where `merged settings keys = changes(KEY_UNITS) merge changes(KEY_SPEED_THRESHOLD)`.
+  Either flow firing re-emits a fresh state — AC3 ("Switching speedUnit triggers
+  a SpeedometerView re-render with new units") and AC2 ("Speed updates at the
+  same rate as `LocationRepository`, 1 Hz") both fall out of this wiring.
+- Added `SpeedometerView.displayUnits: Units` (default METRIC). `onDraw` now
+  picks the displayed numeric and the subscript label from this property —
+  `km/h` for METRIC, `mph` for IMPERIAL with the conversion factor in a
+  companion constant. The arc's colour band still uses canonical km/h, so the
+  green→yellow→red transition T1.13 verified is unchanged regardless of unit.
+  Two new tests cover the new property; all 13 prior T1.13 tests still pass.
+- Created `SpeedFragment(R.layout.fragment_speed)` — observes
+  `vm.state` via `viewLifecycleOwner` (drops the observer cleanly on detach,
+  so detach/reattach cycles can't leak the View through the LiveData chain;
+  AC5). On each emission it pushes `thresholdKmh`, `displayUnits`, and
+  `setSpeed(kmh, animated = true)` into the gauge — single source of truth.
+- `fragment_speed.xml`: a `FrameLayout` with `bg_tile` + a single
+  `com.oskar.retrolauncher.ui.speed.SpeedometerView` filling it (margin =
+  `tile_padding`). A Robolectric XML-walk test asserts the view tag is
+  present, matching the established HomeFragmentTest pattern.
+- TDD: wrote 9 failing tests BEFORE implementing — verified red phase via
+  `Unresolved reference: SpeedUiState`, `produceSpeedUiState`, `displayUnits`,
+  `R.layout.fragment_speed`, `SpeedFragment`. Tests then passed in order:
+  pure transform → view property → fragment XML walk → fragment instantiation.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 103/103 (was 94; +9 new:
+    5 SpeedViewModelTest + 2 SpeedFragmentTest + 2 SpeedometerView additions)
+  - `bpsai-pair arch check` clean on every modified file
+- Files touched:
+  - `ui/speed/SpeedViewModel.kt` (refactor; 71 lines)
+  - `ui/speed/SpeedometerView.kt` (+`displayUnits` + `onDraw` switch; 161 lines)
+  - `ui/speed/SpeedFragment.kt` (new; 27 lines)
+  - `res/layout/fragment_speed.xml` (new)
+  - `test/.../SpeedViewModelTest.kt` (new; 5 tests)
+  - `test/.../SpeedFragmentTest.kt` (new; 2 tests)
+  - `test/.../SpeedometerViewTest.kt` (+2 tests for displayUnits)
+- AC1 placement note: `SpeedFragment` is self-contained and ready to slot in;
+  `RightPanelAdapter[0]` is still pinned to `EmbedFragment` (T1.8 AC), so the
+  HomeFragment placement decision is deferred — a future task can either
+  swap EmbedFragment → SpeedFragment for v0.1 (since EmbedFragment is a
+  v0.3 placeholder anyway) or add a left-column tile. Either path will pick
+  up the working SpeedFragment without re-touching this code.
+- AC5 note: LiveData observation uses `viewLifecycleOwner`, so detach drops
+  the observer; the gauge animator is also cancelled in
+  `SpeedometerView.onDetachedFromWindow`. LeakCanary verification is a
+  debug-build runtime concern — flag if any leak appears once SpeedFragment
+  is mounted in HomeFragment.
+
+### Session: 2026-05-06 — T1.13 SpeedometerView custom drawing (DONE)
+
+- Replaced the scaffolded SpeedometerView (single-orange-ring, no animator
+  for transitions, dp(28) text) with a T1.13-compliant custom view per AC.
+- Added `R.dimen.text_speed_xl` to both default dimens (48sp) and the
+  values-w1024dp head-unit overlay (64sp) — AC2 says ≥48sp.
+- Public surface:
+  - `var thresholdKmh: Float` (default 50) — colour-band breakpoint, coerced ≥1 to keep `t = kmh/threshold` finite.
+  - `var maxSpeedKmh: Float` (default 220) — sweep cap, coerced ≥ threshold so the gauge never inverts.
+  - `setSpeed(kmh: Float, animated: Boolean = true)` — clamps to `[0, maxSpeedKmh]`,
+    cancels any in-flight `ValueAnimator`, then either sets immediately or runs
+    a 250 ms `ValueAnimator` with `DecelerateInterpolator`.
+- Drawing (pure `Paint` + `Canvas`):
+  - Track arc (135°→270° sweep) in `R.color.track`.
+  - Speed arc with color from `arcColorAt(kmh)` — t=kmh/threshold ∈ [0,2]:
+    `t<1` lerps green (0xFF3DDC84) → yellow (0xFFFFC107); `t≥1` lerps
+    yellow → red (0xFFFF5252). Clamped at 2× threshold so the arc never
+    overshoots red into garbage values.
+  - Centered numeric speed using `R.dimen.text_speed_xl`, "km/h" subscript
+    just below.
+  - Stroke widths and rect computed once in `onSizeChanged` — `onDraw`
+    allocates nothing per frame (RectF + Paints are class fields), keeping
+    the AC5 ≥30 fps budget on Cortex-A7 hardware.
+- AC4 satisfied with `setLayerType(LAYER_TYPE_HARDWARE, null)` in `init`;
+  Robolectric reports `view.layerType == LAYER_TYPE_HARDWARE`.
+- TDD: wrote 13 failing Robolectric tests BEFORE implementing — verified red
+  via compile errors against the old API. Tests cover:
+  - AttributeSet + no-args constructor inflate without throwing (AC1)
+  - `view.layerType == LAYER_TYPE_HARDWARE` (AC4)
+  - `speedTextSizePx` matches `R.dimen.text_speed_xl` and ≥48sp on density 1.0 (AC2)
+  - `speedTextAlign == Paint.Align.CENTER` (AC2)
+  - `ANIMATION_DURATION_MS == 250L` (AC5 proxy)
+  - colour bands at 0/threshold/3×threshold km/h are green-dominant /
+    yellow / red-dominant; all three are distinct (AC3)
+  - `setSpeed(animated=false)` writes immediately; clamps at `maxSpeedKmh`
+  - mutating `thresholdKmh` is reflected in the property
+  - end-to-end `view.draw(Canvas)` on a 400×400 bitmap runs without crash
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 94/94 (was 81/81; +13 new
+    SpeedometerView tests, 0 obsolete since the previous file had no tests)
+  - `bpsai-pair arch check` clean on both modified main files and the test file
+- Files touched:
+  - `ui/speed/SpeedometerView.kt` (rewrite, 151 lines)
+  - `res/values/dimens.xml` + `res/values-w1024dp/dimens.xml` (+text_speed_xl)
+  - `test/.../SpeedometerViewTest.kt` (new, 139 lines, 13 tests)
+- Note for AC1 (Android Studio layout-editor preview) and AC5 (≥30 fps via
+  `Choreographer`): the unit-test layer covers AttributeSet inflation +
+  end-to-end onDraw, plus the 250 ms / no-allocation invariants. The literal
+  layout-editor render and the on-device fps measurement are runtime-only
+  checks that should be confirmed during T1.14 wiring (when the View first
+  appears in `fragment_speed`); flag here if either fails.
+
+### Session: 2026-05-06 — T1.12 SpeedFilter with Kalman-style smoothing (DONE)
+
+- Replaced the old alpha-IIR `SpeedFilter` (took raw `Float`, returned `Float`)
+  with the spec-mandated 1D Kalman per task description: takes `LocationSample`,
+  process noise σ=0.5 m/s² (Q = 0.25 (m/s)²), measurement noise R scaled
+  linearly from `accuracy` (R = max(accuracy/5, 1e-3)). Falls back to a 5-sample
+  moving average when `accuracy > 20 m`. Exposes `flow: SharedFlow<Float>`
+  with replay=1 so any subscriber sees the last filtered value immediately.
+- Added a stationary detector — two consecutive raw `speedMs == 0` samples
+  trigger a hard reset and snap output to 0. Single zero just feeds the Kalman
+  step normally so brief GPS dropouts don't bias the estimate to zero.
+- Cold-start safety: first call initializes `x = raw, p = max(R, 1e-3)` so no
+  division-by-zero is possible even when `accuracy = 0` or `NaN`. NaN/negative
+  accuracy is mapped to `Float.MAX_VALUE` so the filter takes the dampened
+  MA fallback path until the GPS chip reports something believable.
+- TDD: wrote 12 failing tests BEFORE the implementation — verified red phase
+  via compile errors (the new tests reference `SpeedFilter()` no-args, `update(LocationSample)`,
+  `filter.flow`). Tests cover all 5 ACs plus edge cases:
+  - cold-start non-NaN (AC4)
+  - cold-start with `accuracy=0` doesn't divide by zero (AC4)
+  - converges to true speed within 5 clean GPS samples (AC1)
+  - high-noise (acc=100) outlier dampened far below the raw value AND less
+    than the same outlier at acc=5 — proves the filter weights low-noise
+    measurements more (AC2)
+  - two zero samples snap output to 0 (AC3); a single zero alone does not
+  - MA fallback engages at acc>20m and produces the literal mean of the last
+    5 raw inputs; window is bounded to 5 (eviction works)
+  - threshold clamp returns 0 when filter output is below threshold
+  - `flow.first()` returns the last emitted value (Flow<Float> AC)
+  - NaN accuracy doesn't propagate as NaN; reset() restores cold-start.
+- LocationService rewired to construct a `LocationSample` from `Location` first,
+  then call `filter.update(sample)`, then push `sample.copy(speedMs = filtered)`.
+  Existing 4 LocationService Robolectric tests still pass — no behavior change
+  for downstream consumers (`LocationRepository.samples`).
+- Coverage: every line in `SpeedFilter.kt` is hit by at least one test except
+  the unreachable empty-buffer guard, which I removed (per CLAUDE.md "don't
+  guard scenarios that can't happen" — `pushToMA` runs unconditionally before
+  `movingAverage`). Conservatively ≥95%, well above the 90% AC.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 81/81 (was 73/73; +12 new
+    SpeedFilter tests, -4 obsolete alpha-IIR tests = net +8)
+  - `bpsai-pair arch check` clean on both modified main files and the test file
+- Files touched:
+  - `data/location/SpeedFilter.kt` (rewrite, 108 lines)
+  - `service/LocationService.kt` (rewire to LocationSample input)
+  - `test/.../SpeedFilterTest.kt` (rewrite, 134 lines, 12 tests)
+
+### Session: 2026-05-06 — T1.11 LocationService foreground service (DONE)
+
+- Audited the existing `LocationService` against T1.11's five ACs. Four were
+  already satisfied: foreground service + notification (AC1), 1 Hz GPS request
+  with 0 m displacement (AC2 — `requestLocationUpdates(GPS_PROVIDER, 1000L,
+  0f, …)`), `START_STICKY` (AC3), pure `LocationManager` with no Play Services
+  dep (AC5). The single gap: **no WakeLock at all**, despite the spec saying
+  "Foreground service holding a partial WakeLock".
+- TDD: wrote 4 Robolectric tests BEFORE implementing — `START_STICKY`, WakeLock
+  held after onCreate, WakeLock released after onDestroy, no-crash sentinel.
+  Confirmed red phase (2 failures: WakeLock null + null-pointer in release
+  assertion).
+- Acquired `PowerManager.PARTIAL_WAKE_LOCK` in `onCreate` with tag
+  `"RetroLauncher::LocationService"` and `setReferenceCounted(false)` so a
+  single `release()` call always discharges it. Released in `onDestroy` via
+  `runCatching { wakeLock?.takeIf { it.isHeld }?.release() }` — defensive
+  against double-release after Robolectric / pared-down ROMs that may release
+  early.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 73/73 (was 69/69; 4 new tests)
+  - `bpsai-pair arch check` clean on `LocationService.kt` and the test file
+- AC2 (1 Hz updates) and AC1 (notification visible) are static + runtime
+  guarantees: AC2 is the literal `requestLocationUpdates(GPS_PROVIDER, 1000L,
+  0f, this)` call (frequency verified on-device via `adb shell dumpsys
+  location` in the AC text). AC5 holds because no `com.google.android.gms`
+  entry exists in `gradle/libs.versions.toml`.
+- Files touched: `service/LocationService.kt` (+WakeLock acquire/release),
+  `test/.../LocationServiceTest.kt` (new).
+
+### Session: 2026-05-06 — T1.10 Util extensions (DONE)
+
+- TDD: wrote 11 new FormatExt tests + 10 new ViewExt tests BEFORE implementing.
+  Confirmed red via unresolved references.
+- Existing FormatExt.kt was 54 lines (already over AC4's 50-line budget).
+  Solution: moved legacy helpers (metersPerSecondToDisplay, tempCToDisplay,
+  metersToDisplay, formatDurationShort, formatHM/HMHM/YMD) to a new sibling
+  `UnitsFormatExt.kt`. Same package, no caller imports change.
+- New `FormatExt.kt` (41 lines) contains the T1.10 trio:
+  - `formatDistance(meters, Units)` — "%.0f m" / "%.1f km" / "%.0f ft" / "%.1f mi"
+    with `Locale.US` so decimal separator is consistent across locales.
+  - `formatDuration(seconds): "HH:MM:SS"` with negative-clamp.
+  - `formatSpeed(metersPerSec, Units): "%.1f km/h"|"%.1f mph"`.
+- `ViewExt.kt` (45 lines): added `View.gone()` / `View.visible()` (idempotent)
+  and `View.fade(toVisible, durationMs=200L)` — fade-in pre-sets alpha=0 if
+  hidden; fade-out flips visibility=GONE in withEndAction so the view keeps
+  its layout slot until animation completes.
+- Final file sizes — three AC-named extension files all under 50:
+  ColorExt 26, FormatExt 41, ViewExt 45. UnitsFormatExt at 55 lines is the
+  refactor artifact; under the project's 200-line arch warning.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 69/69 (was 48/48; +21 new tests)
+  - `bpsai-pair arch check` clean on all six modified/new files
+
+### Session: 2026-05-06 — T1.9 StatusBarFragment (DONE)
+
+- TDD: wrote 5 `ClockTicker` tests (Robolectric ShadowLooper-driven, deterministic
+  time advances) and 4 `StatusBarFragment` XML-structure tests BEFORE implementing.
+  Confirmed red via unresolved `ClockTicker` references.
+- Created `util/ClockTicker.kt` — a Handler-based 1Hz ticker that posts a
+  Runnable, computes the delay to the next whole-second boundary on each tick
+  (so seconds don't drift), and stops cleanly via `removeCallbacks`. Constructor
+  takes `Handler` + `onTick: (Long) -> Unit` + injectable `now: () -> Long` for
+  testability. Replaces the BroadcastReceiver-based `TextClock` (T1.9 AC1 — saves
+  CPU on the Cortex-A7 head unit).
+- `fragment_status.xml`: replaced `<TextClock id=clock>` and `<TextClock id=date>`
+  with `<TextView>` (no more `format12Hour`/`format24Hour` — the ticker handles
+  formatting). Added `android:visibility="gone"` to `trip_chip_slot` so AC3's
+  default-hidden requirement holds even before the StatusTripViewModel observer
+  fires.
+- `StatusBarFragment`: instantiates `ClockTicker` in `onViewCreated`, starts in
+  `onResume`, stops in `onPause`. Each tick formats wall-clock time with
+  `SimpleDateFormat("HH:mm")` and date with `SimpleDateFormat("EEE, MMM d")` and
+  pushes them into the two TextViews. Drawer button onClick → SettingsActivity
+  intent (unchanged, AC4). Speed observer unchanged (AC2 already met via
+  SpeedViewModel).
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 48/48 (was 39/39; 9 new tests)
+  - `bpsai-pair arch check` clean on all 5 modified/new files
+- Files touched: `util/ClockTicker.kt` (new), `ui/status/StatusBarFragment.kt`,
+  `res/layout/fragment_status.xml`, `test/.../ClockTickerTest.kt` (new),
+  `test/.../StatusBarFragmentTest.kt` (new).
+
+### Session: 2026-05-06 — T1.8 HomeFragment + ViewPager2 right panel (DONE)
+
+- TDD: wrote `HomeFragmentTest` (XmlPullParser-based — fragment_home.xml uses
+  `<FragmentContainerView android:name=...>` for media/weather slots, which
+  can't inflate without a FragmentManager) and `RightPanelAdapterTest` (5 tests)
+  BEFORE implementing. Confirmed red via unresolved-reference compile error.
+- Extracted `RightPanelAdapter` from a private inner class of `HomeFragment`
+  to its own file (`ui/home/RightPanelAdapter.kt`), `internal` visibility, with
+  a testable `companion object { PAGE_COUNT, newPage(pos) }` helper. Still
+  extends `FragmentStateAdapter` (AC3 preserved).
+- Moved panel-ratio reactivity from `MainActivity` to `HomeFragment`.
+  HomeFragment.onViewCreated reads `App.settings.panelRatioPercent` and updates
+  `home_split` via `Guideline.setGuidelinePercent(...)` (writes to
+  `LayoutParams.guidePercent` — matches AC4's parenthetical exactly).
+  `viewLifecycleOwner.lifecycleScope` collects `settings.changes(KEY_PANEL_RATIO)`
+  and re-applies on each change. No Activity recreation.
+- Trimmed `MainActivity.applyPanelRatio` to only update its own outer
+  `panel_split` guideline (HomeFragment owns the inner one now).
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 39/39 (was 33/33)
+  - `bpsai-pair arch check` clean on all 5 modified/new files
+
+### Session: 2026-05-06 — T1.7 MainActivity and activity_main.xml (DONE)
+
+- Followed TDD: wrote `MainActivityTest` first. Initial pass attempted full-
+  Activity creation via `Robolectric.buildActivity(MainActivity::class)`; both
+  tests crashed with `IllegalStateException: You need to use a Theme.AppCompat
+  theme (or descendant)`. Diagnosis: Material 3 `Theme.Material3.DayNight.*` IS
+  AppCompat-descendant in material 1.11.0, but the Robolectric 4.11.1 ↔ M3
+  bridge fails to walk the AppCompat ancestry. Pivoted to layout-inflation +
+  reflection tests (no Activity lifecycle) — same AC coverage, no theme fight.
+- Added `testOptions.unitTests.isIncludeAndroidResources = true` to
+  `app/build.gradle.kts` so Robolectric can resolve `R.layout.activity_main`
+  and `R.dimen.status_bar_height` from the merged resource tree.
+- `activity_main.xml`: renamed `@id/host` → `@id/home_container` and replaced
+  the `<fragment>` tag for `status_bar` with `FragmentContainerView@id/
+  status_bar_container` (also resolves the pre-existing lint
+  `FragmentTagUsage` warning). Kept the rail + panel-split structure for the
+  actual launcher functionality.
+- `MainActivity.kt`:
+  - Added `WindowCompat.setDecorFitsSystemWindows(window, false)` for AC4
+    edge-to-edge.
+  - Overrode `onBackPressed()` as a no-op (AC3) — the literal AC reading;
+    modern OnBackPressedCallback would be more idiomatic but the AC names this
+    method.
+  - Replaced `replace(R.id.host, HomeFragment())` with
+    `replace(R.id.home_container, HomeFragment())` and added
+    `replace(R.id.status_bar_container, StatusBarFragment())` so both
+    containers are populated programmatically (no more inline `<fragment>` tag).
+  - Updated `applyPanelRatio`'s `findFragmentById(R.id.host)` to use the new
+    `home_container` ID.
+- Five tests cover the ACs: layout inflates with both IDs (AC1), status bar
+  height matches `@dimen/status_bar_height` (AC1), home_container has match-
+  constraint width/height (AC1), MainActivity declares `onBackPressed`
+  (reflection check — AC3), `WindowCompat` is on the classpath (AC4 sentinel).
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 33/33 (was 28/28; 5 new
+    MainActivity tests via TDD)
+  - `bpsai-pair arch check` clean on all four modified/new files
+- Files touched: `app/build.gradle.kts` (testOptions.unitTests),
+  `app/src/main/java/com/oskar/retrolauncher/MainActivity.kt`,
+  `app/src/main/res/layout/activity_main.xml`,
+  `app/src/test/java/com/oskar/retrolauncher/MainActivityTest.kt` (new).
+
+### Session: 2026-05-06 — T1.6 App.kt service locator (DONE)
+
+- Followed TDD: wrote `AppServiceLocatorTest` (Robolectric, `@Config(application
+  = App::class, sdk = [28])`) FIRST. Three tests covering AC2 (service property
+  reachable), AC4 (repo accessors return same instance — by-lazy invariant),
+  AC5 (constructor signature accepts only `Application`). Confirmed red phase
+  via 3 unresolved-reference compile errors before implementing.
+- Extracted a new `ServiceLocator` class (separate file `ServiceLocator.kt`)
+  holding every repo as `by lazy { ... }`: `http`, `moshi`, `db`, `prefs`,
+  `settings`, `media`, `weather`, `location`, `appList`, `trips`, `appScope`,
+  `tripRecorder`. Constructor takes only `Application` (AC5). Plus a
+  `startup()` helper for the GPS-foreground-service / WorkManager-weather /
+  app-list-prefetch side effects that previously lived in `App.onCreate`.
+- Refactored `App.kt` down to ~50 lines: `val service: ServiceLocator by lazy`
+  exposing the locator (AC2 — `(application as App).service`); `onCreate`
+  plants `Timber.DebugTree()` only in `BuildConfig.DEBUG` (AC3) and calls
+  `service.startup()`. Companion-object accessors (`App.media`, `App.settings`,
+  etc.) became read-only getters delegating to `instance.service.<x>`, keeping
+  all 14 existing call sites working without churn.
+- Hardened startup against Robolectric / pared-down ROMs: wrapped
+  `WorkManager.getInstance(...).scheduleWeather()` and `appList.refresh()` in
+  `runCatching` (matches the existing `LocationService` start-foreground
+  pattern). The launcher must come up even when WorkManager auto-init is
+  absent.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 28/28 tests pass (was 25/25;
+    3 new ServiceLocator tests added by TDD)
+  - `bpsai-pair arch check` clean on all three modified/new files
+
+### Session: 2026-05-05 — T1.5 Application icon + adaptive fallback (DONE)
+
+- The scaffolding had `drawable/ic_launcher.xml` (48dp standalone) and
+  `drawable/ic_launcher_foreground.xml` (108dp adaptive-foreground with the
+  standard 22dp inset) but no `mipmap-*` directories, no adaptive-icon
+  definition, no round variant, and no background drawable.
+- Added the missing pieces:
+  - `drawable/ic_launcher_background.xml` — solid orange `#FF8500` 108dp vector
+    (the Mini AA accent, matching the foreground)
+  - `mipmap-anydpi-v26/ic_launcher.xml` + `ic_launcher_round.xml` — adaptive
+    icon definitions referencing the foreground + background drawables
+  - `mipmap-anydpi/ic_launcher.xml` — vector fallback for API 23–25 (square
+    orange tile + dark "car" body + orange wheels, derived from the existing
+    standalone vector)
+  - `mipmap-anydpi/ic_launcher_round.xml` — round-variant fallback (orange
+    disc instead of square, same internal car shape)
+- Switched the manifest's `android:icon` from `@drawable/ic_launcher` to
+  `@mipmap/ic_launcher` and added `android:roundIcon="@mipmap/ic_launcher_round"`.
+- Used vectors throughout — zero PNGs, so AC4 (no PNGs >256 KB total) is
+  satisfied trivially.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL (icon resources
+    resolve, manifest references valid)
+  - `find … -name "*.png"` returns nothing under `app/src/main/res`
+  - `./gradlew :app:testStandardDebugUnitTest` → 25/25 still green
+  - `bpsai-pair arch check` clean on all 6 modified/new files
+- AC1 ("Icon renders correctly … on a 1024×600 device") is verified
+  statically — adaptive icon spec is well-formed (foreground + background both
+  108dp vectors with proper safe-zone insets), and the manifest correctly
+  references the mipmap resources. Visual confirmation needs a device.
+- Files touched: `app/src/main/AndroidManifest.xml`,
+  `app/src/main/res/drawable/ic_launcher_background.xml` (new),
+  `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` (new),
+  `app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml` (new),
+  `app/src/main/res/mipmap-anydpi/ic_launcher.xml` (new),
+  `app/src/main/res/mipmap-anydpi/ic_launcher_round.xml` (new)
+
+### Session: 2026-05-05 — T1.4 Resource bundles (DONE)
+
+- Migrated `Theme.RetroLauncher` from `Theme.MaterialComponents.NoActionBar`
+  (M2) to `Theme.Material3.DayNight.NoActionBar` (M3). Added `colorSurface` +
+  `colorOnPrimary` + `colorOnSurface`. Dropped M2-only `colorPrimaryDark` and
+  `colorAccent`. Kept all customizations: orange `@color/accent` primary, dark
+  `@color/bg` background/window, light text on dark.
+- Added the four AC-required dimens (`gutter`, `corner_lg`, `corner_md`,
+  `panel_left_min_width`) to both `values/dimens.xml` (phone fallback: 8dp /
+  20dp / 12dp / 240dp) and `values-w1024dp/dimens.xml` (head-unit:
+  12dp / 24dp / 16dp / 300dp).
+- Created `values-night/colors.xml` mirroring the dark palette (the launcher is
+  always dark-styled — head unit in a dark cabin).
+- Externalized hardcoded layout strings (lint AC5) by adding three new strings
+  to `strings.xml`: `embed_v03_placeholder`, `weather_temp_placeholder`,
+  `weather_temp_unit_degree`. Patched `fragment_embed.xml`, `fragment_weather.xml`,
+  `fragment_media.xml`. Removed empty `android:text=""` attrs.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL (M3 migration
+    + day/night resources merge cleanly)
+  - `./gradlew :app:lintStandardDebug` → BUILD SUCCESSFUL; report overview
+    shows zero HardcodedText / HardcodedColor findings
+  - `./gradlew :app:testStandardDebugUnitTest` → 25/25 still green
+  - `bpsai-pair arch check` clean on every modified file
+- Pre-existing lint issues surfaced but out-of-scope: `MissingPermission`
+  (LocationService), `ExpiredTargetSdkVersion` (targetSdk=28 deliberate per
+  spec — head-unit Android 6 era), `SetTextI18n`, `KaptUsageInsteadOfKsp`.
+
+### Session: 2026-05-05 — T1.3 Author AndroidManifest.xml (DONE)
+
+- Audited the existing `app/src/main/AndroidManifest.xml` against T1.3's five
+  ACs. The scaffolded manifest already had: launcher intent filter with
+  `CATEGORY_HOME`+`CATEGORY_DEFAULT`, `BIND_NOTIFICATION_LISTENER_SERVICE` on
+  `MediaNotificationListener` with the listener intent filter, app-level
+  `@style/Theme.RetroLauncher`, `screenOrientation="landscape"` on every
+  Activity, all required permissions, and the `<queries>` block for the app
+  drawer.
+- Single delta needed: removed `android:foregroundServiceType="location"` from
+  `LocationService` per AC4 (targetSdk=28 keeps us pre-API-29's type
+  requirement; setting it adds an unnecessary lint signal).
+- Did NOT add the `system`-flavor manifest overlay (sharedUserId="android.uid.system",
+  embedding perms). Per the backlog, that source set + signing wiring is owned
+  by a later task ("Wire the system product flavor end-to-end").
+- Verified:
+  - `./gradlew :app:processStandardDebugMainManifest` → BUILD SUCCESSFUL
+  - Merged manifest at `app/build/intermediates/merged_manifest/standardDebug/`
+    contains all 5 AC fingerprints (HOME+DEFAULT category, BIND permission on
+    listener, LocationService without foregroundServiceType, app theme,
+    landscape orientation)
+  - `./gradlew :app:testStandardDebugUnitTest` → 25/25 still green
+  - `bpsai-pair arch check` clean on the manifest
+- Files touched: `app/src/main/AndroidManifest.xml` (one block edited)
+
+### Session: 2026-05-05 — T1.2 Author app/build.gradle.kts with flavors (DONE)
+
+- Added `signingConfigs.platform` block in `app/build.gradle.kts` pointing to
+  `../platform.keystore` with a lazy attach (only configures storeFile/passwords
+  if the file exists, so the missing keystore doesn't break standardDebug
+  config-time). Wired it into `productFlavors.system.signingConfig`.
+- Added `lint { baseline = file("lint-baseline.xml"); abortOnError = false }`
+  block to `android{}`. Created stub `app/lint-baseline.xml` (empty issues list,
+  format=6 — populated on next `./gradlew :app:updateLintBaseline`).
+- Verified via gradle:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL, APK at
+    `app/build/outputs/apk/standard/debug/app-standard-debug.apk`
+  - `./gradlew :app:tasks` shows both `Standard*` and `System*` flavor variants
+- Pre-existing test failures fixed as part of this task (user-authorized scope
+  pull-in from T1.24 / T1.30 / T1.34):
+  - **`FormatExt.metersToDisplay`** — was using default-locale formatting; ET
+    locale on this Mac produced `1,5km` instead of `1.5km`. Forced `Locale.US`
+    in all four `String.format` calls so display strings are stable across
+    locales.
+  - **`MediaState.livePosition`** — guard `playing && positionAtMs > 0` was
+    rejecting valid `positionAtMs == 0` baselines. Dropped the `> 0` clause;
+    `playing=false` still short-circuits to base position.
+  - **`TripRecorderTest`** — three issues: (1) recorder was constructed with
+    `this` (the runTest scope), so `locationFlow.collect` triggered
+    `UncompletedCoroutinesError` on test exit; (2) `runTest(StandardTestDispatcher())`
+    was throwing `IllegalArgumentException`; (3) `MutableSharedFlow(replay=0)`
+    drops emissions before subscription, so a single
+    `for { emit }` then `advanceUntilIdle()` was losing samples. Refactored to
+    `backgroundScope` + a `feed()` helper that calls `runCurrent()` after each
+    emit so the collector consumes serially. All 25 tests pass.
+- arch check clean on every modified file
+- Files touched: `app/build.gradle.kts`, `app/lint-baseline.xml` (new),
+  `app/src/main/java/com/oskar/retrolauncher/util/FormatExt.kt`,
+  `app/src/main/java/com/oskar/retrolauncher/data/media/MediaState.kt`,
+  `app/src/test/java/com/oskar/retrolauncher/TripRecorderTest.kt`
+
+### Session: 2026-05-05 — T1.1 Bootstrap Gradle project structure (DONE)
+
+- Audited the existing `retro-launcher/` scaffolding (carried over uncommitted
+  from a prior session) against T1.1's five ACs:
+  - `settings.gradle.kts` — `pluginManagement` + `dependencyResolutionManagement`
+    with `repositoriesMode = FAIL_ON_PROJECT_REPOS` ✓
+  - Root `build.gradle.kts` — `alias(libs.plugins.android.application)`,
+    `kotlin.android`, `kotlin.kapt` (all `apply false`) ✓
+  - `gradle/libs.versions.toml` — every version + library + plugin from spec
+    section 4 present (kotlin 1.9.22, agp 8.2.2, coroutines 1.7.3, all AndroidX,
+    material, okhttp, moshi, glide, timber) ✓
+  - No Hilt / Retrofit / Compose / Coil / Firebase deps ✓
+- Fixed two gaps:
+  - Wrapper distribution URL bumped from gradle-8.4 → gradle-8.5 (per task spec)
+  - `gradle-wrapper.jar` + `gradlew` + `gradlew.bat` were missing — generated
+    via `gradle wrapper --gradle-version=8.5 --distribution-type=bin`
+- Provisioned the dev environment that the rest of the sprint will need:
+  - Installed `gradle` 9.5 + `openjdk@17` 17.0.19 via Homebrew
+  - Installed `android-commandlinetools` cask (SDK root at
+    `/opt/homebrew/share/android-commandlinetools`)
+  - Accepted SDK licenses, installed `platforms;android-34`, `build-tools;34.0.0`,
+    `platform-tools`
+  - Wrote `retro-launcher/local.properties` with `sdk.dir` (gitignored already)
+- Verified AC1: `./gradlew tasks` → BUILD SUCCESSFUL, lists `:app` module tasks
+  for both `standard` and `system` flavors; `./gradlew projects` confirms
+  `Project ':app'` registered
+- `bpsai-pair arch check` clean on all three modified Gradle files
+
+### Session: 2026-05-05 — Engage backlog drafted
+
+- Read `https://paircoder.ai/docs/guides/engage/` to confirm the backlog format
+  (H1 sprint title, `### Phase N:` markers, `### {ID} -- {Title} | Cx: N | Pn`
+  task headers, **Description** + **AC** checkboxes + **Depends on** body)
+- Authored `plans/backlogs/backlog-sprint-1-retro-launcher.md` covering the full
+  v0.1 → v0.3 scope from `headunit-launcher-spec.md`: 49 tasks, 11 phases, 244
+  acceptance criteria, all dependency refs validated, 2 human-gated tasks
+  (T1.38 install script, T1.44 platform signing) and 2 with external tools
+- Mirrored the plan in `.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml`
+- Validated locally with a parser script (regex matches the documented format);
+  no duplicate IDs, no broken `Depends on:` refs, every task has Description +
+  AC + Depends on
+
+### Session: 2026-05-05 — Project Initialization
+
+- Initialized project with PairCoder v2
+- Created `.paircoder/` directory structure
+- Set up initial configuration
+
+## What's Next
+
+1. **T1.16 — MediaRepository state flow** (P1, Cx 8, depends on T1.15). Implement
+   `MediaRepository.kt` per spec section 9.5 with a `MutableStateFlow<MediaState>`
+   plus a 250 ms position-tick coroutine that runs only while `isPlaying`. ACs
+   cover empty-state on cold start, position cadence + freeze-on-pause, atomic
+   reset on track change, bitmap recycling, and concurrent emit/collect safety.
+   Run via `/start-task T1.16`.
+2. After T1.16, Phase 4 continues: T1.17 (MediaFragment + Glide UI) → T1.18
+   (Palette dominant-color extraction). Phase 4 closes the v0.1 media tile.
+3. Then Phase 5 (T1.19–T1.22 weather card) and Phase 6 (T1.23–T1.27 trip
+   recording) round out the v0.1 MVP feature set.
+4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
+   ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
+   for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
+5. Phases 10–11 (T1.39–T1.49) are v0.2/v0.3 polish and the system-flavor
+   embedding pipeline; the deepest dep chain bottoms out at T1.49 → T1.48 →
+   … → T1.43, all gated on T1.44 platform signing for the system flavor.
+
+### Dev-env note (2026-05-05)
+
+This Mac was bare before T1.1. Now installed and required for every subsequent
+task:
+- JDK 17 at `/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home`
+  (keg-only — export `JAVA_HOME` before running gradle if not in shell rc)
+- Gradle 9.5 (system) — but the wrapper pins builds to Gradle 8.5 per spec
+- Android SDK at `/opt/homebrew/share/android-commandlinetools` (set via
+  `retro-launcher/local.properties`, which is gitignored)
+
+## Blockers
+
+None currently.
+
+## Quick Commands
+
+```bash
+# Check status
+bpsai-pair status
+
+# Create a new plan
+bpsai-pair plan new my-feature --type feature
+
+# List tasks
+bpsai-pair task list
+
+# Start working on a task
+bpsai-pair task update TASK-XXX --status in_progress
+
+# Complete a task (with Trello)
+bpsai-pair ttask done TRELLO-XX --summary "..." --list "Deployed/Done"
+bpsai-pair task update TASK-XXX --status done

@@ -1,0 +1,30 @@
+.venv/
+__pycache__/
+*.pyc
+agent_pack.tgz
+*.bak
+.DS_Store
+
+# Reference APKs (Mini AA) — large binaries, not source
+*.apk
+*.aab
+
+# Android build artifacts (retro-launcher/)
+**/build/
+**/.gradle/
+**/local.properties
+**/*.iml
+**/.cxx/
+**/.externalNativeBuild/
+
+# PairCoder — ephemeral/session data
+.paircoder/data/
+.paircoder/history/
+.paircoder/cache/
+.paircoder/.cli_version
+.paircoder/telemetry/telemetry.jsonl
+.paircoder/telemetry/signals.jsonl
+.paircoder/telemetry/heartbeat
+.paircoder/telemetry/audit.jsonl
+.paircoder/telemetry/session_snapshot.json
+.paircoder/feedback/calibration.json

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/pref_units">
+        <ListPreference
+            android:key="units"
+            android:title="@string/pref_units"
+            android:summary="@string/pref_units_summary"
+            android:entries="@array/units_entries"
+            android:entryValues="@array/units_values"
+            android:defaultValue="metric" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_layout">
+        <SeekBarPreference
+            android:key="panel_ratio"
+            android:title="@string/pref_panel_ratio"
+            android:max="70"
+            android:min="30"
+            android:defaultValue="40"
+            app:showSeekBarValue="true"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+        <ListPreference
+            android:key="grid_cols"
+            android:title="@string/pref_grid_cols"
+            android:entries="@array/grid_cols_entries"
+            android:entryValues="@array/grid_cols_values"
+            android:defaultValue="4" />
+        <ListPreference
+            android:key="grid_rows"
+            android:title="@string/pref_grid_rows"
+            android:entries="@array/grid_rows_entries"
+            android:entryValues="@array/grid_rows_values"
+            android:defaultValue="3" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_trip">
+        <SwitchPreferenceCompat
+            android:key="record_trips"
+            android:title="@string/pref_record_trips"
+            android:summary="@string/pref_record_trips_summary"
+            android:defaultValue="true" />
+        <SeekBarPreference
+            android:key="speed_threshold"
+            android:title="@string/pref_speed_threshold"
+            android:max="10"
+            android:min="0"
+            android:defaultValue="3"
+            app:showSeekBarValue="true"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+        <SwitchPreferenceCompat
+            android:key="show_loc_status"
+            android:title="@string/pref_show_loc_on_status"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_advanced">
+        <Preference
+            android:key="notification_access"
+            android:title="@string/pref_notification_access"
+            android:summary="@string/pref_notification_access_summary" />
+    </PreferenceCategory>
+</PreferenceScreen>

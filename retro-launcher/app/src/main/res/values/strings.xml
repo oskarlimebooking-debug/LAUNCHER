@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Retro Launcher</string>
+
+    <!-- Embed surface placeholder (root-only feature ships in v0.3) -->
+    <string name="embed_v03_placeholder">Map\n\nEmbedding lands in v0.3</string>
+
+    <!-- Status bar -->
+    <string name="status_drawer_cd">App drawer</string>
+    <string name="speed_unit_kph">km/h</string>
+    <string name="speed_unit_mph">mph</string>
+    <string name="status_no_speed">—</string>
+
+    <!-- Media -->
+    <string name="media_no_app">Nothing playing</string>
+    <string name="media_play_cd">Play / Pause</string>
+    <string name="media_next_cd">Next</string>
+    <string name="media_prev_cd">Previous</string>
+
+    <!-- Weather -->
+    <string name="weather_unavailable">Weather unavailable</string>
+    <string name="weather_loading">Updating…</string>
+    <string name="weather_temp_placeholder">—</string>
+    <string name="weather_temp_unit_degree">°</string>
+
+    <!-- Trips -->
+    <string name="trips_title">Trip History</string>
+    <string name="trips_none">No trips this month</string>
+    <string name="trip_active_fmt">Trip %1$s · %2$s · %3$s avg</string>
+    <string name="trips_summary_fmt">%1$d trips · %2$s this %3$s</string>
+
+    <!-- Grid -->
+    <string name="grid_pin_to_rail">Pin to rail</string>
+    <string name="grid_unpin">Unpin</string>
+    <string name="grid_app_info">App info</string>
+
+    <!-- Wizard -->
+    <string name="wizard_welcome_title">Welcome</string>
+    <string name="wizard_welcome_body">Set up your launcher in a few quick steps.</string>
+    <string name="wizard_notif_title">Notification access</string>
+    <string name="wizard_notif_body">Required to read media (track, art, transport) from any music app.</string>
+    <string name="wizard_loc_title">Location</string>
+    <string name="wizard_loc_body">Required for speed, weather, and trip recording.</string>
+    <string name="wizard_battery_title">Battery whitelist</string>
+    <string name="wizard_battery_body">Keeps the GPS service running while the head unit is on.</string>
+    <string name="wizard_grant">Grant</string>
+    <string name="wizard_skip">Skip</string>
+    <string name="wizard_continue">Continue</string>
+    <string name="wizard_done">Done</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="pref_units">Units</string>
+    <string name="pref_units_summary">Speed and temperature display</string>
+    <string name="pref_layout">Layout</string>
+    <string name="pref_panel_ratio">Left / Right panel split</string>
+    <string name="pref_grid_cols">App grid columns</string>
+    <string name="pref_grid_rows">App grid rows</string>
+    <string name="pref_trip">Trip recording</string>
+    <string name="pref_record_trips">Record trip history</string>
+    <string name="pref_record_trips_summary">Saves trips with distance, speed &amp; location</string>
+    <string name="pref_speed_threshold">Ignore speeds below (km/h)</string>
+    <string name="pref_advanced">Advanced</string>
+    <string name="pref_notification_access">Notification access</string>
+    <string name="pref_notification_access_summary">Re-link to system notification settings</string>
+    <string name="pref_show_loc_on_status">Show location on status bar</string>
+    <string name="pref_debug_logs">Debug logs</string>
+
+    <string-array name="units_entries">
+        <item>Metric (°C / km/h)</item>
+        <item>Imperial (°F / mph)</item>
+    </string-array>
+    <string-array name="units_values">
+        <item>metric</item>
+        <item>imperial</item>
+    </string-array>
+
+    <string-array name="grid_cols_entries">
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+    <string-array name="grid_cols_values">
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+
+    <string-array name="grid_rows_entries">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+    <string-array name="grid_rows_values">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+</resources>

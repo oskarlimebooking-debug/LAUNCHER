@@ -1,0 +1,25 @@
+# Built output
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+*.keystore
+
+# Generated
+app/build/
+build/
+out/
+
+# Sensitive
+local.properties
+keystore.properties
+*.jks
+platform.pk8
+platform.x509.pem

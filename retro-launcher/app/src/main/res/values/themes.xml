@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <style name="Theme.RetroLauncher" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:statusBarColor" tools:targetApi="21">@color/bg</item>
+        <item name="android:navigationBarColor" tools:targetApi="21">@color/bg</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds" tools:targetApi="21">true</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+
+    <!-- Variant for the launcher home: fully transparent SystemUI, hides everything -->
+    <style name="Theme.RetroLauncher.Home" parent="Theme.RetroLauncher">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <!-- For preferences screens — keep AppBar visible -->
+    <style name="Theme.RetroLauncher.Preferences" parent="PreferenceThemeOverlay">
+        <item name="preferenceCategoryTitleTextColor">@color/accent</item>
+    </style>
+
+</resources>

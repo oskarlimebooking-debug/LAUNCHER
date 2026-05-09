@@ -1,0 +1,28 @@
+---
+id: TASK-201
+title: Create WeatherDto Moshi classes for Current Daily and Condition
+plan: plan-2026-05-create-app
+type: feature
+priority: P1
+complexity: 50
+status: pending
+sprint: null
+tags: []
+depends_on: []
+---
+
+# Objective
+
+Create WeatherDto Moshi classes for Current Daily and Condition
+
+# Implementation Plan
+
+- TODO: Add implementation steps
+
+# Acceptance Criteria
+
+- [ ] TODO: Add acceptance criteria
+
+# Verification
+
+- TODO: Add verification steps

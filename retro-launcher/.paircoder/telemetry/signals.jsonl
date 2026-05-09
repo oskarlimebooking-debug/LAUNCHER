@@ -1,0 +1,5 @@
+{"signal_type": "session_end", "severity": "info", "timestamp": "2026-05-05T12:55:34.608434+00:00", "session_id": "", "payload": {"outcome_summary": "", "stop_reason": ""}, "source": "automated"}
+{"signal_type": "subagent_outcome", "severity": "info", "timestamp": "2026-05-05T12:55:36.848998+00:00", "session_id": "", "payload": {"stop_reason": "", "agent_id": "", "agent_type": ""}, "source": "automated"}
+{"signal_type": "session_end", "severity": "info", "timestamp": "2026-05-05T19:50:17.408438+00:00", "session_id": "", "payload": {"outcome_summary": "", "stop_reason": ""}, "source": "automated"}
+{"signal_type": "subagent_outcome", "severity": "info", "timestamp": "2026-05-05T19:50:18.754886+00:00", "session_id": "", "payload": {"stop_reason": "", "agent_id": "", "agent_type": ""}, "source": "automated"}
+{"signal_type": "session_end", "severity": "info", "timestamp": "2026-05-09T11:36:32.177232+00:00", "session_id": "", "payload": {"outcome_summary": "", "stop_reason": ""}, "source": "automated"}

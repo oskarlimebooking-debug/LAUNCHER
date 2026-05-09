@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp">
+
+    <ImageButton
+        android:id="@+id/drawer_btn"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_apps"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/status_drawer_cd" />
+
+    <!-- Clock + date are driven by a Handler-based ClockTicker (T1.9 AC1) — no
+         BroadcastReceiver overhead from TextClock. -->
+    <TextView
+        android:id="@+id/clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:textColor="@color/accent"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="14sp" />
+
+    <!-- Trip stats appear here only while RECORDING — gone by default (T1.9 AC3),
+         StatusTripViewModel flips visibility when a trip is active. -->
+    <FrameLayout
+        android:id="@+id/trip_chip_slot"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:visibility="gone" />
+
+    <!-- Right side: speed + horizontal progress -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/speed_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/status_no_speed"
+            android:textSize="@dimen/speed_text"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-light"
+            android:minWidth="50dp"
+            android:gravity="end" />
+
+        <ProgressBar
+            android:id="@+id/speed_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="120dp"
+            android:layout_height="6dp"
+            android:layout_marginStart="10dp"
+            android:max="200"
+            android:progress="0"
+            android:progressTint="@color/accent"
+            android:progressBackgroundTint="@color/track" />
+    </LinearLayout>
+</LinearLayout>
