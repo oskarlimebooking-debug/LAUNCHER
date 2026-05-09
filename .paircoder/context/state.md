@@ -1,11 +1,11 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.18 closed)
+> Last updated: 2026-05-09 (T1.19 closed)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** T1.18 done — media tile background tint now driven by AndroidX Palette: dominant colour extracted async via `dominantColorAsync(fallback)`, results cached by `MediaTintCache` keyed on `packageName|title|album` (cache-hit skips Palette), `MediaTinter` animates the gradient between old → new colour over 400 ms via `ArgbEvaluator`, and the theme's `colorSurface` is used as fallback for null art / extraction failure; 141/141 tests green
+**Status:** T1.19 done — `WeatherDto.kt` rewritten as the Moshi DTO for OWM `/data/2.5/weather` (current weather endpoint): `main` (temp / feels_like / temp_min? / temp_max? / pressure? / humidity?), `weather: List<Condition>` (id / icon required, main? / description? optional), `wind: Wind?` (speed required, deg? / gust? optional), `name`, `dt`. All inner classes are `internal data class` (no leak to UI layer — UI consumes `WeatherSnapshot` instead). `@JsonClass(generateAdapter = true)` codegen via kapt produces a real `WeatherDtoJsonAdapter` on the classpath, picked up by the global Moshi instance (`ServiceLocator.moshi`) without explicit registration. WeatherSnapshot.from() updated to map the new DTO (highC / lowC fall back to current temp when temp_max / temp_min are missing). 147/147 tests green
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -38,8 +38,9 @@ Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing
 - ✓ T1.16 MediaRepository state flow (done 2026-05-09)
 - ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
 - ✓ T1.18 Album-art Palette dominant-color extraction (done 2026-05-09)
-- ⏳ T1.19 (next; weather card)
-- T1.19 – T1.49 pending
+- ✓ T1.19 WeatherDto with Moshi adapters (done 2026-05-09)
+- ⏳ T1.20 (next; WeatherRepository OkHttp client)
+- T1.20 – T1.49 pending
 
 The remaining 48 tasks are tracked in
 `.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
@@ -52,6 +53,72 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.19 done** — `WeatherDto.kt` rewritten as the Moshi DTO for OWM
+  `/data/2.5/weather` (the legacy current-weather endpoint, per task spec —
+  the engage backlog deliberately diverged from the spec section 10.3 OneCall
+  3.0 example because the legacy endpoint is free without a paid promo key,
+  matching T1.20's `fetch(lat, lon)` URL choice).
+  - All inner classes `internal data class`, so the DTO never escapes the data
+    module — UI layer keeps consuming `WeatherSnapshot` (AC4).
+  - Required fields per the AC (`main.temp`, `main.feels_like`, `weather[0].id`,
+    `weather[0].icon`, `wind.speed`, `name`, `dt`) are non-null Kotlin types.
+    Optional fields (`main.temp_min`, `main.temp_max`, `main.pressure`,
+    `main.humidity`, `wind.deg`, `wind.gust`, `weather[].main`, `weather[].description`)
+    are nullable with default `null` so a partial OWM payload deserializes
+    cleanly without throwing (AC3). `wind` itself is also nullable for defence
+    against an entirely missing wind block.
+  - `@JsonClass(generateAdapter = true)` on every data class produces a real
+    `WeatherDtoJsonAdapter` (and `WeatherDto_MainJsonAdapter`,
+    `WeatherDto_ConditionJsonAdapter`, `WeatherDto_WindJsonAdapter`) via kapt.
+    The global `ServiceLocator.moshi` (built with
+    `Moshi.Builder().add(KotlinJsonAdapterFactory()).build()`) finds them
+    by classloader lookup — no explicit `.add()` registration needed (AC1).
+  - File is 45 lines; comfortably under the 100-line AC5 budget.
+- `WeatherSnapshot.from(dto, city, asOf)` updated to map the new DTO:
+  `tempC = dto.main.temp`, `highC = dto.main.tempMax ?: dto.main.temp`,
+  `lowC = dto.main.tempMin ?: dto.main.temp`, `iconId = dto.weather.firstOrNull()?.id ?: 800`,
+  `condition = dto.weather.firstOrNull()?.description.orEmpty()`. Marked
+  `internal` so its WeatherDto parameter type doesn't violate Kotlin's
+  visibility rules; same-module callers (Repository, tests) still resolve.
+  WeatherSnapshot itself stays `public` for UI consumers.
+- TDD: wrote `WeatherDtoTest.kt` (6 tests) BEFORE implementing — verified red
+  via 13 unresolved-reference compile errors against `dto.main`, `dto.wind`,
+  `WeatherDto.Main`, `WeatherDto.Wind` and the no-`current`/no-`daily`/no-`timezone`
+  primary constructor. Tests cover:
+  - **AC1**: `Class.forName("…WeatherDtoJsonAdapter")` succeeds — direct proof
+    that kapt generated the codegen adapter.
+  - **AC2**: full OWM `/data/2.5/weather` JSON fixture (with all required +
+    optional fields) deserializes cleanly; every spec'd field is asserted.
+  - **AC3**: missing `wind.gust` deserializes as null; missing `wind.deg`
+    deserializes as null; missing entire `wind` block deserializes as null
+    (no throw).
+  - **AC3**: missing `temp_min` / `temp_max` deserialize as null.
+  - JSON roundtrip via `adapter.toJson(dto)` → `adapter.fromJson(...)` preserves
+    required-field equality.
+- WeatherSnapshotTest rewritten to use the new DTO fixture shape (3 tests
+  unchanged in count; same coverage of the from() transform).
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest --rerun-tasks` → 147/147 (was
+    141/141; +6 new WeatherDtoTest tests, 3 WeatherSnapshotTest tests
+    rewritten to new fixture)
+  - `bpsai-pair arch check` clean on `WeatherDto.kt` (45 lines),
+    `WeatherSnapshot.kt` (29 lines), `WeatherDtoTest.kt` (~115 lines, test
+    fixture-heavy), `WeatherSnapshotTest.kt` (~70 lines)
+- Files touched:
+  - `data/weather/WeatherDto.kt` (rewrite — OneCall shape removed, replaced with
+    `/data/2.5/weather` shape; all classes `internal`)
+  - `data/weather/WeatherSnapshot.kt` (`from()` rewritten + `internal` modifier;
+    inline import of WeatherDto unchanged)
+  - `test/.../WeatherDtoTest.kt` (new; 6 tests)
+  - `test/.../WeatherSnapshotTest.kt` (rewritten fixtures to new DTO shape)
+- T1.20 inheritance: WeatherRepository.kt's URL string still points at
+  `/data/3.0/onecall` and will need to be retargeted to
+  `/data/2.5/weather?lat=…&lon=…&appid=…&units=metric` as part of T1.20.
+  The DTO/Snapshot surface is now ready; T1.20 just owns the HTTP/cache
+  pieces. The repository compiles + the build is green because no test
+  exercises the HTTP path today.
 
 - **T1.18 done** — Album-art Palette dominant-colour extraction with caching
   and animated gradient transition. Two new classes plus a refactored
@@ -184,6 +251,13 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
   T1.18.task.md verbatim against backlog — description identical, all 5 ACs
   preserved, `depends_on: [T1.17]`, P1, Cx 5, plan=`plan-sprint-1-engage`.
   Trello disconnected; budget pre-flight clean. Next action: `/start-task T1.18`.
+  Seventh `/pc-plan` re-audit (2026-05-09, post-T1.18-done): T1.18 closed; Phase 4
+  (media player) is now fully done. Same 13+36 plan split (49 total T1.x task
+  files on disk). Spot-checked T1.19.task.md verbatim against backlog —
+  description identical, all 5 ACs preserved, `depends_on: [T1.10]` (T1.10 is
+  already done since 2026-05-06, so the explicit dep is satisfied), P1, Cx 3,
+  plan=`plan-sprint-1-engage`. Trello disconnected; budget pre-flight clean.
+  Phase 5 (Weather card) opens next. Next action: `/start-task T1.19`.
 - **T1.16 done** — MediaRepository owns a `MutableStateFlow<MediaState>` plus a 250 ms position-tick coroutine; recycles replaced album-art bitmaps with same-instance / already-recycled guards; thread-safety verified with concurrent emit + collect from two coroutines; 9 new tests, 119/119 green
 - **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
 
@@ -827,13 +901,18 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.19 — Weather card** (P1, depends on T1.18 chain). Phase 5 opens. The
-   scaffolding already includes a `WeatherSnapshot` type (with passing tests),
-   a placeholder `fragment_weather.xml`, and a WorkManager job slot wired in
-   `ServiceLocator.startup()`. T1.19 wires the data → view binding.
-   Run via `/start-task T1.19`.
-2. Then Phase 5 (T1.20–T1.22 weather card details) and Phase 6 (T1.23–T1.27
-   trip recording) round out the v0.1 MVP feature set.
+1. **T1.20 — WeatherRepository OkHttp client** (P1, depends on T1.19). Wires
+   the `WeatherDto` from T1.19 into a real network call: OkHttp with 10 s
+   timeouts + gzip + 5 MB on-disk LRU cache, `fetch(lat, lon)` calling
+   `/data/2.5/weather`, Nominatim reverse geocode with the proper User-Agent,
+   DTO → `WeatherSnapshot` mapping, `Result<WeatherSnapshot>` returns.
+   Repository tests via `MockWebServer` covering ≥4 scenarios (success,
+   401, timeout, malformed JSON). Note: existing `WeatherRepository.kt`
+   already has scaffolding using the OneCall URL — T1.20 retargets the URL
+   and adds the cache + Result return type. Run via `/start-task T1.20`.
+2. Then T1.21 (WeatherWorker periodic refresh) and T1.22 (WeatherFragment +
+   ViewModel + icon mapping) round out Phase 5; Phase 6 (T1.23–T1.27 trip
+   recording) follows.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
