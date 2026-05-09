@@ -1,11 +1,11 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.16 closed)
+> Last updated: 2026-05-09 (T1.17 closed)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** T1.16 done — MediaRepository now owns the playback StateFlow + a 250 ms position-tick coroutine, recycles replaced album-art bitmaps, and is unit-tested for atomic track updates and concurrent emit/collect; 119/119 tests green
+**Status:** T1.17 done — MediaFragment binds the StateFlow with Glide RoundedCorners album art (flicker-free across track changes), marquee-animated title/artist, seek bar driven by the repo's 250 ms ticker (no view-side jitter), transport buttons wired to MediaController, and empty-state "Nothing playing" rendering; 125/125 tests green
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -36,8 +36,9 @@ Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing
 - ✓ T1.14 SpeedFragment + ViewModel (done 2026-05-06)
 - ✓ T1.15 MediaNotificationListener service (done 2026-05-06)
 - ✓ T1.16 MediaRepository state flow (done 2026-05-09)
-- ⏳ T1.17 (next; MediaFragment + Glide UI)
-- T1.17 – T1.49 pending
+- ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
+- ⏳ T1.18 (next; Palette dominant-color extraction for media tile background)
+- T1.18 – T1.49 pending
 
 The remaining 48 tasks are tracked in
 `.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
@@ -50,6 +51,20 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.17 done** — MediaFragment now binds `MediaUiState` with Glide
+  `RoundedCorners` album art (re-loaded only on bitmap-reference change so the
+  repo's 250 ms position re-emits don't flicker the art), marquee-animated
+  title/artist (`ellipsize=marquee`, `marqueeRepeatLimit=marquee_forever`,
+  `setSelected(true)` to start the animation), seek bar driven directly by the
+  StateFlow's `positionMs` (no view-side ticker — repo's 250 ms tick already
+  republishes), transport buttons wired to `vm.togglePlay/prev/next` →
+  `App.media` → `MediaController.transportControls`, and empty state showing
+  "Nothing playing" with blank artist when `MediaState.empty` is emitted.
+  Dropped redundant `MediaViewModel.tick()` (the repo ticker handles position
+  advancement; the VM's manual tick was a no-op since T1.16). Added
+  `R.dimen.album_art_corner` (10dp default / 12dp head-unit overlay).
+  6 new tests, 125/125 green.
 
 - **T1.16 done** (auto-updated by hook)
 
@@ -80,6 +95,11 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
   (description text identical, all 5 ACs, depends_on=[T1.15], P1, Cx 8,
   plan=`plan-sprint-1-engage`). Trello disconnected; budget pre-flight clean.
   Next action remains `/start-task T1.16`.
+  Fifth `/pc-plan` re-audit (2026-05-09, post-T1.16-done): T1.16 is now closed;
+  `plan list` shows the same 13+36 split (49 total T1.x task files on disk).
+  Spot-checked T1.17.task.md verbatim against backlog — description identical,
+  all 5 ACs preserved, `depends_on: [T1.16]`, P1, Cx 8, plan=`plan-sprint-1-engage`.
+  Trello disconnected; budget pre-flight clean. Next action: `/start-task T1.17`.
 - **T1.16 done** — MediaRepository owns a `MutableStateFlow<MediaState>` plus a 250 ms position-tick coroutine; recycles replaced album-art bitmaps with same-instance / already-recycled guards; thread-safety verified with concurrent emit + collect from two coroutines; 9 new tests, 119/119 green
 - **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
 
@@ -723,15 +743,16 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.17 — MediaFragment + Glide UI** (P1, depends on T1.16). Wires the
-   MediaState flow into a layout: title/artist text, Glide-loaded album art,
-   play/pause/next/prev transport buttons, and the seek bar driven by the
-   repo's position ticker (now live as of T1.16). The VM's manual `tick()`
-   call can be dropped — the repository's 250 ms ticker already advances
-   `state.value`. Run via `/start-task T1.17`.
-2. After T1.17, Phase 4 closes with T1.18 (Palette dominant-color extraction
-   for the media tile background).
-3. Then Phase 5 (T1.19–T1.22 weather card) and Phase 6 (T1.23–T1.27 trip
+1. **T1.18 — Palette dominant-color extraction** (P1, depends on T1.17). Phase 4
+   closer: drive the media tile's background gradient from the album art's
+   dominant colour. The plumbing is already partially in place — `ColorExt.kt`
+   exposes `Bitmap.dominantColorAsync` (T1.10) and `MediaFragment.applyTint(...)`
+   already calls it on every art change. T1.18 will likely formalize this:
+   write the AC tests (Palette extraction returns a non-default colour for a
+   known bitmap; gradient applies on the root view), and decide whether the
+   tint should also propagate up to the surrounding tile / status-bar accent.
+   Run via `/start-task T1.18`.
+2. Then Phase 5 (T1.19–T1.22 weather card) and Phase 6 (T1.23–T1.27 trip
    recording) round out the v0.1 MVP feature set.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract

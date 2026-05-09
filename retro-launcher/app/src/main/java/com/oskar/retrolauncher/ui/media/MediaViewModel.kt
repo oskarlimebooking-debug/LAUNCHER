@@ -9,6 +9,13 @@ import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.data.media.MediaState
 import kotlinx.coroutines.launch
 
+/**
+ * Observes the [com.oskar.retrolauncher.data.media.MediaRepository] state flow and projects
+ * each emission into a [MediaUiState] for the fragment to bind. Position-tick advancement
+ * lives in `MediaRepository.startPositionTicker(...)` (T1.16) — every 250 ms the repo
+ * republishes a state with an updated `positionMs`, which flows through this VM. The
+ * fragment never runs its own ticker (AC3 — no jitter).
+ */
 class MediaViewModel : ViewModel() {
 
     private val _ui = MutableLiveData<MediaUiState>()
@@ -18,11 +25,6 @@ class MediaViewModel : ViewModel() {
         viewModelScope.launch {
             App.media.state.collect { _ui.value = MediaUiState.from(it) }
         }
-    }
-
-    fun tick() {
-        val cur = _ui.value ?: return
-        _ui.value = cur.copy(positionMs = App.media.state.value.livePosition())
     }
 
     fun togglePlay() {

@@ -9,19 +9,24 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.util.dominantColorAsync
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
+/**
+ * T1.17 — binds the active media session to the layout per spec section 9.6.
+ *
+ * The position seek bar is driven by `MediaRepository`'s 250 ms ticker (T1.16);
+ * this fragment never runs its own loop. Title and artist use marquee animation
+ * (configured in `fragment_media.xml`) — `setSelected(true)` activates it once
+ * the fragment is visible.
+ */
 class MediaFragment : Fragment(R.layout.fragment_media) {
 
     private val vm: MediaViewModel by viewModels()
-    private var positionJob: Job? = null
-    private var lastArtId: Int = 0
+    private var lastArtRef: android.graphics.Bitmap? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val art = view.findViewById<ImageView>(R.id.art)
@@ -32,27 +37,43 @@ class MediaFragment : Fragment(R.layout.fragment_media) {
         val next = view.findViewById<ImageButton>(R.id.next)
         val bar = view.findViewById<ProgressBar>(R.id.progress)
 
+        // AC2: marquee runs only while the TextView is "selected".
+        title.isSelected = true
+        artist.isSelected = true
+
+        val cornerPx = resources.getDimensionPixelSize(R.dimen.album_art_corner)
+        val glideOptions = RequestOptions().transform(RoundedCorners(cornerPx))
+
         vm.uiState.observe(viewLifecycleOwner) { s ->
+            // AC5 empty state: title shows "Nothing playing", artist blank.
             title.text = if (s.isEmpty) getString(R.string.media_no_app) else s.title.orEmpty()
-            artist.text = s.artist.orEmpty()
+            artist.text = if (s.isEmpty) "" else s.artist.orEmpty()
+
             playPause.setImageResource(
                 if (s.playing) R.drawable.ic_pause else R.drawable.ic_play
             )
-            // Color extraction + Glide load — only on art change
-            val artBitmap = s.art
-            val newArtId = artBitmap?.hashCode() ?: 0
-            if (artBitmap != null && newArtId != lastArtId) {
-                lastArtId = newArtId
-                Glide.with(this)
-                    .load(artBitmap)
-                    .placeholder(R.drawable.bg_album)
-                    .into(art)
-                artBitmap.dominantColorAsync { c -> applyTint(view, c) }
-            } else if (artBitmap == null) {
-                lastArtId = 0
-                art.setImageResource(R.drawable.bg_album)
+
+            // AC1: rounded-corner album art. Re-load only on bitmap-reference change so
+            // the 250 ms position ticker (which re-emits identical art) doesn't re-trigger
+            // Glide and cause flicker.
+            val newArt = s.art
+            if (newArt !== lastArtRef) {
+                lastArtRef = newArt
+                if (newArt != null) {
+                    Glide.with(this)
+                        .load(newArt)
+                        .apply(glideOptions)
+                        .placeholder(R.drawable.bg_album)
+                        .into(art)
+                    newArt.dominantColorAsync { c -> applyTint(view, c) }
+                } else {
+                    Glide.with(this).clear(art)
+                    art.setImageResource(R.drawable.bg_album)
+                }
             }
 
+            // AC3: seek bar bound directly to the StateFlow's position — repo's
+            // 250 ms ticker advances it without any view-side timer.
             if (s.durationMs > 0) {
                 bar.max = s.durationMs.toInt()
                 bar.progress = s.positionMs.coerceIn(0, s.durationMs).toInt()
@@ -67,24 +88,7 @@ class MediaFragment : Fragment(R.layout.fragment_media) {
         next.setOnClickListener { vm.next() }
     }
 
-    override fun onResume() {
-        super.onResume()
-        positionJob?.cancel()
-        positionJob = viewLifecycleOwner.lifecycleScope.launch {
-            while (true) {
-                vm.tick()
-                delay(500)
-            }
-        }
-    }
-
-    override fun onPause() {
-        positionJob?.cancel(); positionJob = null
-        super.onPause()
-    }
-
     private fun applyTint(root: View, color: Int) {
-        // Subtle gradient: dominant color on top, fading to base card at bottom.
         val bg = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
             intArrayOf(color, 0xFF111111.toInt()),
