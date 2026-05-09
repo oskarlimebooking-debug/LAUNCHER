@@ -58,7 +58,13 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
   checked T1.16 (next) and T1.46 (deepest dep chain) — both faithful to the
   backlog text. Trello is not connected (`bpsai-pair trello status` reports
   disconnected), so engagement uses the file-based plan only. Budget pre-flight
-  clean. No re-creation needed; next action is `/start-task T1.16`.
+  clean. No re-creation needed; next action is `/start-task T1.16`. Re-confirmed
+  on a second `/pc-plan` invocation later the same day — same conclusions; also
+  noted that two plan files coexist by design (the dated metadata plan
+  `plan-2026-05-retro-launcher-sprint-1` and the engage skeleton
+  `plan-sprint-1-engage` that task-file frontmatter references), and that
+  T1.1.task.md has an in-flight `failed` → `pending` revert in the working
+  tree (status drift is held in state.md, not per-file frontmatter).
 - **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
 
 ### Session: 2026-05-06 — T1.15 MediaNotificationListener service (DONE)
