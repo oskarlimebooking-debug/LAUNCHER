@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.25 done — 25/49 tasks done, T1.26 next)
+> Last updated: 2026-05-09 (T1.26 done — 26/49 tasks done, T1.27 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 25/49 tasks done (Phases 1–4 + T1.19–T1.25).
-T1.26 (next pending Phase 6 task).
+**Status:** Planning complete and reconciled. 26/49 tasks done (Phases 1–4 + T1.19–T1.26).
+T1.27 (next pending Phase 6 task).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -59,11 +59,12 @@ Phase 5 — Weather card (4/4 done)
 - ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
 - ✓ T1.22 WeatherFragment + ViewModel + icon mapping (done 2026-05-09)
 
-Phase 6 — Trip recording (3/5 done)
+Phase 6 — Trip recording (4/5 done)
 - ✓ T1.23 Room schema (TripEntity, TripPoint, TripDao, AppDb) (done 2026-05-09)
 - ✓ T1.24 TripRecorder state machine (done 2026-05-09)
 - ✓ T1.25 TripRepository (done 2026-05-09)
-- ⏳ T1.26–T1.27 (P2, Cx 8/8)
+- ✓ T1.26 TripCalendarView heatmap (done 2026-05-09)
+- ⏳ T1.27 (P2, Cx 8)
 
 Phase 7 — App grid (0/3 pending)
 - ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
@@ -81,8 +82,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–5 + T1.23–T1.25 done (25/49). Continue with `/start-task T1.26`
-(Phase 6 — Trip list UI, Cx 8, P2).
+Phases 1–5 + T1.23–T1.26 done (26/49). Continue with `/start-task T1.27`
+(Phase 6 — Trip list UI / TripsAdapter wiring, Cx 8, P2).
 
 ### Backlog
 
@@ -90,6 +91,30 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.26 done** (auto-updated by hook)
+
+- **T1.26 done** — `TripCalendarView` rewritten as a 7×13 heatmap (~91 days)
+  per the task spec. Cells are color-mapped from per-day distance via a
+  blue→orange→red gradient (auto-normalized against the largest day in the
+  set). Today's cell is drawn last with an accent stroke; the selected cell
+  gets a white inset stroke. The drawing path is allocation-free — `Paint`s
+  and the single `RectF` are init-time fields; `onDraw` only mutates them.
+  - Wired the heatmap into `TripsViewModel`: `selectedDayMs: Long`,
+    `distanceByDay: LiveData<Map<Long, Double>>`, `dayTrips` filtered by the
+    selected day's local-midnight window. `recentTrips` flows directly from
+    `TripRepository.recentTrips` so the heatmap repaints on Room
+    invalidation.
+  - `TripsFragment` drives `calendar.setDistances(byDay)` and listens to
+    `onDaySelected = { ms -> vm.selectDay(ms) }`. The header label switches
+    from "MMMM yyyy" to "EEE, MMM d" since selection is now day-granular.
+  - `fragment_trips.xml` switched the calendar slot to `wrap_content` so
+    `onMeasure` can size cells = panelWidth / 13 and height = side × 7.
+  - 11 Robolectric tests (`TripCalendarViewTest`) cover all five ACs:
+    grid dims, fits panel width via `onMeasure`, heatmap monotonicity,
+    today-border stroke, tap dispatch (today + 90-days-ago), and outside-
+    grid taps that must NOT dispatch.
+  - Full unit-test suite green; arch check clean on all four touched files.
 
 - **T1.25 done** — TripRepository: recent trips Flow + getPoints Flow + delete
   by id + activeTrip StateFlow (Phase 6, Cx 5, P1).
@@ -1214,11 +1239,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.26 — TripsFragment list UI** (P2, Cx 8, depends on T1.25). Wire the
-   `recentTrips` Flow into a RecyclerView on the trips card; uses the new
-   `TripRepository.recentTrips` and `activeTrip` StateFlow. Run via
-   `/start-task T1.26`.
-2. T1.27 closes Phase 6 (GPX export from `getPoints(tripId)`).
+1. **T1.27 — closes Phase 6** (GPX export from `getPoints(tripId)`,
+   share-sheet integration on long-press). Run via `/start-task T1.27`.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
