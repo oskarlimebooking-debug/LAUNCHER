@@ -1,20 +1,27 @@
 package com.oskar.retrolauncher.util
 
 import android.graphics.Bitmap
-import android.graphics.Color
+import androidx.annotation.ColorInt
 import androidx.core.graphics.ColorUtils
 import androidx.palette.graphics.Palette
 
-private val DEFAULT_FALLBACK = Color.parseColor("#1F1F1F")
-
 /**
- * Async dominant-color extraction. The bitmap is sampled on a background thread
- * by Palette; the callback fires on the main thread.
+ * Async dominant-colour extraction backed by AndroidX Palette.
+ *
+ * Palette runs the swatch generation on a background executor; the [onResult]
+ * callback fires on the main thread. When extraction fails (`Palette.from`
+ * returns no swatches — e.g. a fully transparent or 1×1 bitmap) the [fallback]
+ * is delivered verbatim, so callers can plug in the theme's `colorSurface`
+ * (T1.18 AC4).
  */
-fun Bitmap.dominantColorAsync(onResult: (Int) -> Unit) {
-    Palette.from(this).generate { p ->
-        val raw = p?.getDominantColor(DEFAULT_FALLBACK) ?: DEFAULT_FALLBACK
-        onResult(raw.darkened(0.4f))
+fun Bitmap.dominantColorAsync(
+    @ColorInt fallback: Int,
+    onResult: (Int) -> Unit,
+) {
+    Palette.from(this).generate { palette ->
+        val swatch = palette?.dominantSwatch
+        val out = if (swatch != null) swatch.rgb.darkened(0.4f) else fallback
+        onResult(out)
     }
 }
 
