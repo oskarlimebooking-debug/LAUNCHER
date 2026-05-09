@@ -92,6 +92,8 @@ class ServiceLocator(private val app: Application) {
             }
         }
 
+        media.startPositionTicker(appScope)
+
         runCatching {
             ContextCompat.startForegroundService(
                 app,

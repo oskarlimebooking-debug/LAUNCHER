@@ -1,11 +1,11 @@
 # Current State
 
-> Last updated: 2026-05-09 (planning audit — T1.15 last closed)
+> Last updated: 2026-05-09 (T1.16 closed)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** T1.15 done — MediaNotificationListener metadata pipeline now extracts album; metadataToMediaState extracted as a pure transform with 7 unit tests covering AC3/AC4/AC5; 110/110 tests green
+**Status:** T1.16 done — MediaRepository now owns the playback StateFlow + a 250 ms position-tick coroutine, recycles replaced album-art bitmaps, and is unit-tested for atomic track updates and concurrent emit/collect; 119/119 tests green
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -35,8 +35,9 @@ Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing
 - ✓ T1.13 SpeedometerView custom drawing (done 2026-05-06)
 - ✓ T1.14 SpeedFragment + ViewModel (done 2026-05-06)
 - ✓ T1.15 MediaNotificationListener service (done 2026-05-06)
-- ⏳ T1.16 (next; check backlog)
-- T1.16 – T1.49 pending
+- ✓ T1.16 MediaRepository state flow (done 2026-05-09)
+- ⏳ T1.17 (next; MediaFragment + Glide UI)
+- T1.17 – T1.49 pending
 
 The remaining 48 tasks are tracked in
 `.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
@@ -65,7 +66,89 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
   `plan-sprint-1-engage` that task-file frontmatter references), and that
   T1.1.task.md has an in-flight `failed` → `pending` revert in the working
   tree (status drift is held in state.md, not per-file frontmatter).
+  Third `/pc-plan` re-audit (same day): identical conclusions. Also explained
+  the `bpsai-pair plan list` count drift — it shows 13 tasks for
+  `plan-2026-05-retro-launcher-sprint-1` and 36 for `plan-sprint-1-engage`
+  (49 total), because task-file frontmatter splits ownership across the two
+  plan IDs. T1.16 spot-check verbatim against backlog: same description, same
+  5 ACs, depends_on=[T1.15] correct.
+  Fourth `/pc-plan` re-audit (same day): identical conclusions. `plan list`
+  still shows 13+36 split; all 49 T1.x task files present under
+  `.paircoder/tasks/`; T1.16.task.md re-confirmed verbatim against backlog
+  (description text identical, all 5 ACs, depends_on=[T1.15], P1, Cx 8,
+  plan=`plan-sprint-1-engage`). Trello disconnected; budget pre-flight clean.
+  Next action remains `/start-task T1.16`.
+- **T1.16 done** — MediaRepository owns a `MutableStateFlow<MediaState>` plus a 250 ms position-tick coroutine; recycles replaced album-art bitmaps with same-instance / already-recycled guards; thread-safety verified with concurrent emit + collect from two coroutines; 9 new tests, 119/119 green
 - **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
+
+### Session: 2026-05-09 — T1.16 MediaRepository state flow (DONE)
+
+- TDD: wrote 9 failing Robolectric tests in `MediaRepositoryTest.kt` BEFORE
+  implementing — verified red via unresolved-reference compile errors against
+  `MediaState.empty`, `MediaRepository(tickIntervalMs=, clock=)`, and
+  `startPositionTicker(scope)`. Tests cover all 5 ACs:
+  - **AC1**: cold-start emits `MediaState.empty`; `clear()` returns to empty.
+  - **AC2**: position increments at 250 ms cadence (3 successive ticks at
+    250/500/750 ms with an injected virtual clock); position freezes when
+    `playing=false` even after 1.25 s of advanced time + clock.
+  - **AC3**: a single `update(state)` call emits the new title + position-0
+    + duration in one StateFlow value (StateFlow's `value` setter is atomic;
+    observers cannot see a partial state).
+  - **AC4**: replacing the album-art bitmap recycles the previous bitmap
+    instance; reusing the same Bitmap reference across updates does NOT
+    recycle (would corrupt a Glide bitmap pool sharing the reference); the
+    new bitmap stays live; `clear()` recycles the held art.
+  - **AC5**: two collectors + two writer coroutines racing 100 updates
+    through `MutableStateFlow` produces no exceptions, both collectors
+    reach the same final value, final state is well-formed.
+- Added `MediaState.empty` companion (`val empty = MediaState()`) — the test
+  AC text references it literally; this gives a single shared empty sentinel
+  rather than allocating a new MediaState on every clear.
+- Rewrote `MediaRepository.kt` (102 lines):
+  - Constructor takes `tickIntervalMs = 250L` and an injectable
+    `clock: () -> Long` (defaults to `SystemClock.elapsedRealtime()`) so the
+    ticker test can advance virtual + wall time together without depending on
+    the real device clock.
+  - `update(s)` writes to `_state.value` (atomic) then recycles the previous
+    bitmap if it's a different non-null non-recycled instance — guards
+    against double-recycle and Glide-pool corruption.
+  - `clear()` is now `update(MediaState.empty)` — funnels through the same
+    recycle path so the held art doesn't leak across a session reset.
+  - `startPositionTicker(scope)`: launches a coroutine that loops
+    `delay(tickIntervalMs)` → if `current.playing` is false, continues; else
+    builds an advanced state via `current.copy(positionMs = livePosition(now),
+    positionAtMs = now)` and calls `_state.compareAndSet(current, advanced)`.
+    The CAS is the AC5/AC3 thread-safety guarantee: a racing `update()` from
+    the listener thread (e.g. a fresh metadata callback firing mid-tick) is
+    never overwritten by stale extrapolation; the next tick sees the new
+    state and works against it.
+  - `stopPositionTicker()` cancels the job and clears the field — currently
+    unused but a clean handle for future shutdown / tests.
+- Wired `ServiceLocator.startup()` to call `media.startPositionTicker(appScope)`
+  once — runs forever inside the SupervisorJob's lifetime so the seek bar
+  advances even when no fragment is observing the flow.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 119/119 (was 110/110; +9 new
+    MediaRepositoryTest tests)
+  - `bpsai-pair arch check` clean on `MediaRepository.kt`, `MediaState.kt`,
+    `ServiceLocator.kt`, `MediaRepositoryTest.kt`
+- Files touched:
+  - `data/media/MediaState.kt` (+`companion object { val empty }`)
+  - `data/media/MediaRepository.kt` (rewrite; ticker + recycle + CAS)
+  - `ServiceLocator.kt` (start the ticker on `appScope` in `startup()`)
+  - `test/.../MediaRepositoryTest.kt` (new; 9 tests)
+- AC4 LeakCanary verification is a runtime concern — the unit-test layer
+  proves the recycle policy (replaced → recycled, same-instance → not
+  recycled). Confirm at v0.1 device smoke pass that no LeakCanary report
+  fires on track skip, and that StrictMode reports no `Bitmap.recycle()`
+  on a Glide-managed bitmap (which would only happen if a UI consumer
+  hands a Glide-pool bitmap back into `MediaRepository.update`).
+- Note for the consumer side: `MediaViewModel.tick()` is now redundant —
+  the repo ticker already advances the StateFlow every 250 ms and the VM's
+  `App.media.state.collect` will rebuild `MediaUiState` on each emission.
+  Leaving `tick()` in place for now; T1.17 (MediaFragment) can drop the
+  manual tick call when wiring the seek bar.
 
 ### Session: 2026-05-06 — T1.15 MediaNotificationListener service (DONE)
 
@@ -638,14 +721,14 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.16 — MediaRepository state flow** (P1, Cx 8, depends on T1.15). Implement
-   `MediaRepository.kt` per spec section 9.5 with a `MutableStateFlow<MediaState>`
-   plus a 250 ms position-tick coroutine that runs only while `isPlaying`. ACs
-   cover empty-state on cold start, position cadence + freeze-on-pause, atomic
-   reset on track change, bitmap recycling, and concurrent emit/collect safety.
-   Run via `/start-task T1.16`.
-2. After T1.16, Phase 4 continues: T1.17 (MediaFragment + Glide UI) → T1.18
-   (Palette dominant-color extraction). Phase 4 closes the v0.1 media tile.
+1. **T1.17 — MediaFragment + Glide UI** (P1, depends on T1.16). Wires the
+   MediaState flow into a layout: title/artist text, Glide-loaded album art,
+   play/pause/next/prev transport buttons, and the seek bar driven by the
+   repo's position ticker (now live as of T1.16). The VM's manual `tick()`
+   call can be dropped — the repository's 250 ms ticker already advances
+   `state.value`. Run via `/start-task T1.17`.
+2. After T1.17, Phase 4 closes with T1.18 (Palette dominant-color extraction
+   for the media tile background).
 3. Then Phase 5 (T1.19–T1.22 weather card) and Phase 6 (T1.23–T1.27 trip
    recording) round out the v0.1 MVP feature set.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an

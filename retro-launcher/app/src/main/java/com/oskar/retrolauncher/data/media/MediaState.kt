@@ -20,4 +20,8 @@ data class MediaState(
     fun livePosition(now: Long = SystemClock.elapsedRealtime()): Long =
         if (playing) positionMs + ((now - positionAtMs) * speed).toLong()
         else positionMs
+
+    companion object {
+        val empty = MediaState()
+    }
 }
