@@ -1,13 +1,20 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.19 closed)
+> Last updated: 2026-05-09 (T1.20 done — 20/49 tasks, T1.21 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** T1.19 done — `WeatherDto.kt` rewritten as the Moshi DTO for OWM `/data/2.5/weather` (current weather endpoint): `main` (temp / feels_like / temp_min? / temp_max? / pressure? / humidity?), `weather: List<Condition>` (id / icon required, main? / description? optional), `wind: Wind?` (speed required, deg? / gust? optional), `name`, `dt`. All inner classes are `internal data class` (no leak to UI layer — UI consumes `WeatherSnapshot` instead). `@JsonClass(generateAdapter = true)` codegen via kapt produces a real `WeatherDtoJsonAdapter` on the classpath, picked up by the global Moshi instance (`ServiceLocator.moshi`) without explicit registration. WeatherSnapshot.from() updated to map the new DTO (highC / lowC fall back to current temp when temp_max / temp_min are missing). 147/147 tests green
+**Status:** Planning complete and reconciled. 20/49 tasks done (Phases 1–4 + T1.19 + T1.20).
+T1.21 (WeatherWorker periodic refresh) is the next pending task.
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
+
+> Tracking note: tasks are split across two plan IDs in the CLI —
+> `plan-2026-05-retro-launcher-sprint-1` (13 tasks: T1.2, T1.4–T1.15) and
+> `plan-sprint-1-engage` (36 tasks: T1.1, T1.3, T1.16–T1.49, created by the
+> `engage` autonomous run). Both reflect the same backlog. Treat the
+> 49-task backlog as the source of truth and resolve the split later.
 
 ## Current Focus
 
@@ -20,32 +27,58 @@ Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing
 
 ### Active Sprint
 
+Phase 1 — Project scaffolding (5/5 done)
 - ✓ T1.1 Bootstrap Gradle project structure (done 2026-05-05)
 - ✓ T1.2 Author app/build.gradle.kts with flavors (done 2026-05-05)
 - ✓ T1.3 Author AndroidManifest.xml (done 2026-05-05)
 - ✓ T1.4 Resource bundles: themes, colors, strings, dimens (done 2026-05-05)
 - ✓ T1.5 Application icon and adaptive icon fallback (done 2026-05-05)
+
+Phase 2 — App shell (5/5 done)
 - ✓ T1.6 App.kt service locator and Application class (done 2026-05-06)
 - ✓ T1.7 MainActivity and activity_main.xml (done 2026-05-06)
 - ✓ T1.8 HomeFragment with ViewPager2 right panel (done 2026-05-06)
 - ✓ T1.9 StatusBarFragment (clock, speed, trip stats, drawer) (done 2026-05-06)
 - ✓ T1.10 Util extensions: ColorExt, FormatExt, ViewExt (done 2026-05-06)
+
+Phase 3 — Location service and speedometer (4/4 done)
 - ✓ T1.11 LocationService foreground service (done 2026-05-06)
 - ✓ T1.12 SpeedFilter with Kalman-style smoothing (done 2026-05-06)
 - ✓ T1.13 SpeedometerView custom drawing (done 2026-05-06)
 - ✓ T1.14 SpeedFragment + ViewModel (done 2026-05-06)
+
+Phase 4 — Media player (4/4 done)
 - ✓ T1.15 MediaNotificationListener service (done 2026-05-06)
 - ✓ T1.16 MediaRepository state flow (done 2026-05-09)
 - ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
 - ✓ T1.18 Album-art Palette dominant-color extraction (done 2026-05-09)
-- ✓ T1.19 WeatherDto with Moshi adapters (done 2026-05-09)
-- ⏳ T1.20 (next; WeatherRepository OkHttp client)
-- T1.20 – T1.49 pending
 
-The remaining 48 tasks are tracked in
-`.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
-backlog doc; `bpsai-pair task list` is currently empty (engage hasn't been
-run end-to-end). Continue with `/start-task T1.16`.
+Phase 5 — Weather card (2/4 done)
+- ✓ T1.19 WeatherDto with Moshi adapters (done 2026-05-09)
+- ✓ T1.20 WeatherRepository OkHttp client (done 2026-05-09)
+- ⏳ T1.21 WeatherWorker periodic refresh (next; P1, Cx 5)
+- ⏳ T1.22 WeatherFragment + ViewModel + icon mapping (P1, Cx 5)
+
+Phase 6 — Trip recording (0/5 pending)
+- ⏳ T1.23–T1.27 (P1/P2, Cx 8/13/5/8/8)
+
+Phase 7 — App grid (0/3 pending)
+- ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
+
+Phase 8 — Settings and first-run (0/4 pending)
+- ⏳ T1.31–T1.34 (P1/P1/P1/P2, Cx 5/5/8/3)
+
+Phase 9 — Testing and build (0/4 pending)
+- ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
+
+Phase 10 — v0.2 polish (0/5 pending)
+- ⏳ T1.39–T1.43 (all P2, Cx 13/5/8/5/5)
+
+Phase 11 — v0.3 system-build features (0/6 pending)
+- ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
+
+All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
+Continue with `/start-task T1.21`.
 
 ### Backlog
 
@@ -53,6 +86,53 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.20 done** — `WeatherRepository.kt` rewritten to spec section 10.4. OkHttp
+  client now hits OWM `/data/2.5/weather` (matches T1.19's DTO; the previous
+  implementation accidentally targeted `/data/3.0/onecall` against the legacy
+  DTO shape). Public surface gains `suspend fun fetch(lat, lon): Result<WeatherSnapshot>`
+  that never throws — `refresh()` is retained as the side-effecting variant
+  callers like `WeatherWorker` and `WeatherViewModel` already use.
+  Base URLs and the OWM API key are constructor-injectable (with production
+  defaults of `BuildConfig.OWM_API_KEY` and the real hosts) so MockWebServer
+  tests can target loopback without monkey-patching.
+  - AC2 (5 MB on-disk LRU cache at `cacheDir/weather/`) lives on the shared
+    `OkHttpClient` in `ServiceLocator`, not on the repository, because every
+    weather call shares that client. `OkHttp`'s `Cache` is itself an LRU
+    evictor that respects server cache-control headers.
+  - Connect/read timeouts bumped to 10 s (was 8 s / 15 s) to match spec.
+  - Nominatim `User-Agent` tightened to exactly `retro-launcher/0.1` per their
+    TOS (was previously appending the application id, which is allowed but the
+    AC pins the bare form).
+  - `WeatherRepositoryTest` covers the spec'd 4 scenarios + 4 extras: success,
+    401, read timeout (via `SocketPolicy.NO_RESPONSE` and a fast-timeout
+    client), malformed JSON, blank-key fast-fail, OWM key & path & UA assertions
+    on the recorded request, refresh-success state propagation, and
+    refresh-failure leaving state untouched. `AppServiceLocatorTest` gains a
+    cache assertion for AC2.
+  - Test infra: added `okhttp-mockwebserver` (4.12.0, matching okhttp version)
+    to `libs.versions.toml` and the test source set.
+
+- **Planning recap (`/pc-plan`)** — re-validated the Sprint 1 backlog against
+  the on-disk plan + task state. No new tasks created; all 49 task files
+  already exist and the breakdown matches `backlog-sprint-1-retro-launcher.md`.
+  Reconciled CLI/file divergence by resyncing T1.1, T1.3, T1.16, T1.17, T1.19,
+  T1.20 (file frontmatter was ahead of CLI's last-known status from a stale
+  `engage` run that reported "failed" for several tasks the user had already
+  finished). Documented the dual-plan tracking split (`-2026-05-retro-launcher-sprint-1`
+  + `-sprint-1-engage`) so it isn't surprising next session. State of work:
+  19/49 done (Phases 1–4 complete + T1.19), T1.20 is the well-formed next
+  task, no blockers.
+
+- **T1.19 done** (auto-updated by hook)
+
+- **T1.17 done** (auto-updated by hook)
+
+- **T1.16 done** (auto-updated by hook)
+
+- **T1.3 done** (auto-updated by hook)
+
+- **T1.1 done** (auto-updated by hook)
 
 - **T1.19 done** — `WeatherDto.kt` rewritten as the Moshi DTO for OWM
   `/data/2.5/weather` (the legacy current-weather endpoint, per task spec —

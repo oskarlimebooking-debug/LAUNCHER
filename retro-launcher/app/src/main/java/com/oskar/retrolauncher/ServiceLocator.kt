@@ -23,7 +23,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import okhttp3.Cache
 import okhttp3.OkHttpClient
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
@@ -37,9 +39,15 @@ import java.util.concurrent.TimeUnit
 class ServiceLocator(private val app: Application) {
 
     val http: OkHttpClient by lazy {
+        // T1.20 AC2 — 5 MB on-disk LRU cache rooted at cacheDir/weather/.
+        // OkHttp's Cache implementation is itself an LRU evictor that respects
+        // server cache-control headers, so a single Cache instance satisfies
+        // both the size cap and the eviction policy.
+        val cacheDir = File(app.cacheDir, "weather").apply { mkdirs() }
         OkHttpClient.Builder()
-            .connectTimeout(8, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .cache(Cache(cacheDir, CACHE_MAX_BYTES))
             .build()
     }
 
@@ -78,6 +86,10 @@ class ServiceLocator(private val app: Application) {
             locationFlow = location.samples,
             geocoder = { lat, lon -> weather.reverseGeocodeBlocking(lat, lon) },
         )
+    }
+
+    private companion object {
+        const val CACHE_MAX_BYTES = 5L * 1024 * 1024
     }
 
     /**

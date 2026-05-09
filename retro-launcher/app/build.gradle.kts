@@ -128,6 +128,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)

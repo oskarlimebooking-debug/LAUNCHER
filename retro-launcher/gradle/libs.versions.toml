@@ -49,6 +49,7 @@ androidx-preference = { module = "androidx.preference:preference-ktx", version.r
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+okhttp-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 moshi = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
 moshi-codegen = { module = "com.squareup.moshi:moshi-kotlin-codegen", version.ref = "moshi" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }

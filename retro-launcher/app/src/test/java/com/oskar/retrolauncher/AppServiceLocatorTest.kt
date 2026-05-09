@@ -1,12 +1,15 @@
 package com.oskar.retrolauncher
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 /**
  * T1.6 ACs covered:
@@ -45,5 +48,29 @@ class AppServiceLocatorTest {
         val locator = ServiceLocator(app)
         assertNotNull(locator.media)
         assertNotNull(locator.settings)
+    }
+
+    /**
+     * T1.20 AC2 — OkHttpClient is configured with the spec'd 10 s timeouts and a
+     * 5 MB on-disk cache rooted at `cacheDir/weather/`. Verified here (not in
+     * WeatherRepositoryTest) because the cache lives on the shared client owned
+     * by ServiceLocator.
+     */
+    @Test
+    fun `http client has 10s timeouts and 5MB on-disk cache at cacheDir weather`() {
+        val app = RuntimeEnvironment.getApplication() as App
+        val http = app.service.http
+
+        assertEquals(10_000, http.connectTimeoutMillis)
+        assertEquals(10_000, http.readTimeoutMillis)
+
+        val cache = http.cache
+        assertNotNull("OkHttpClient must have a disk cache configured", cache)
+        assertEquals(5L * 1024 * 1024, cache!!.maxSize())
+
+        val expectedDir = java.io.File(app.cacheDir, "weather").canonicalPath
+        assertEquals(expectedDir, cache.directory.canonicalPath)
+        assertTrue("cache directory must exist", cache.directory.exists())
+        assertEquals(TimeUnit.SECONDS.toMillis(10).toInt(), http.connectTimeoutMillis)
     }
 }
