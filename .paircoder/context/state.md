@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.22 done — 22/49 tasks, T1.23 next)
+> Last updated: 2026-05-09 (T1.23 done — 23/49 tasks, T1.24 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 22/49 tasks done (Phases 1–4 + T1.19–T1.22).
-T1.23 (TripRecorder state machine — Phase 6 kickoff) is the next pending task.
+**Status:** Planning complete and reconciled. 23/49 tasks done (Phases 1–4 + T1.19–T1.23).
+T1.24 (TripRecorder state machine continuation — next pending Phase 6 task).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -59,8 +59,9 @@ Phase 5 — Weather card (4/4 done)
 - ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
 - ✓ T1.22 WeatherFragment + ViewModel + icon mapping (done 2026-05-09)
 
-Phase 6 — Trip recording (0/5 pending)
-- ⏳ T1.23–T1.27 (P1/P2, Cx 8/13/5/8/8)
+Phase 6 — Trip recording (1/5 done)
+- ✓ T1.23 Room schema (TripEntity, TripPoint, TripDao, AppDb) (done 2026-05-09)
+- ⏳ T1.24–T1.27 (P1/P2, Cx 13/5/8/8)
 
 Phase 7 — App grid (0/3 pending)
 - ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
@@ -87,6 +88,47 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.23 done** — Room schema (TripEntity, TripPoint, TripDao, AppDb). The
+  schema files already existed on disk (matching spec section 12.3 exactly),
+  so the task reduced to closing the missing AC: a Room in-memory unit test.
+  - **New test file** `TripDaoTest.kt` — 4 cases under `RobolectricTestRunner`
+    using `Room.inMemoryDatabaseBuilder` (no Robolectric resource overhead;
+    `@Config(sdk = [28])` only). Cases:
+    1. insert + query — 4 trips × 100 points each, asserts `all()` Flow
+       returns 4 ordered DESC by `startMs` and each trip's points come back
+       ordered ASC by `tsMs`.
+    2. `byRange()` window filter — 4 trips at 60s spacing, asserts only the
+       2 trips inside `[from, to)` return.
+    3. cascade delete — delete one of 4 trips, asserts its 100 points are
+       gone (FK CASCADE) while the other 3 trips and their 300 points
+       remain. Closes AC2.
+    4. `update()` — verifies in-place mutation round-trips through the DB.
+  - **AC verification:**
+    - AC1 (DB version 1, no `fallbackToDestructiveMigration`) — `AppDb.kt`
+      already declares `version = 1` with no fallback call; no migration
+      objects needed since this is the first version.
+    - AC2 (FK cascade) — covered by `delete trip cascades to its points`.
+    - AC3 (suspend / Flow) — every DAO method is `suspend` (insert, update,
+      delete, insertPoints, points) or returns `Flow` (`all`, `byRange`).
+    - AC4 (kapt clean for Room) — `./gradlew :app:kaptStandardDebugKotlin
+      --rerun-tasks` produces zero Room-related warnings; the only kapt
+      warning is the pre-existing Moshi codegen "migrate to KSP" notice.
+    - AC5 (in-memory builder, ≥4 trips × 100 points) — covered by `insert
+      and query four trips with 100 points each via Flow` and the cascade
+      test which inserts the same fixture before deletion.
+  - **Tests:** 184 pass / 0 fail / 0 errors (was 180; +4 from `TripDaoTest`).
+  - **Note on field naming:** the task description listed alternative field
+    names (`startTime`, `endTime`, `durationS`, `gpxPath`) but the spec
+    section 12.3 — which the description explicitly cites as authoritative
+    — uses `startMs`, `endMs`, `startLabel`, `endLabel`. The on-disk schema
+    matches the spec verbatim, so it was kept as-is. `gpxPath` lives
+    outside the entity; T1.27 (GPX export) will write to a path derived
+    from `tripId` rather than storing one.
+  - **Note on `getRecentTrips(limit)` in the task description:** spec
+    section 12.3 has no such method — it has `all()` (ORDER BY startMs
+    DESC, no limit) and `byRange(from, to)`. UI-side limiting is fine via
+    `flow.take(n)`; not adding a DAO method that the spec doesn't define.
 
 - **T1.22 done** — WeatherFragment + ViewModel + icon mapping. 6 files of source
   + 4 new test files (180 tests pass; 0 failures). Highlights:
