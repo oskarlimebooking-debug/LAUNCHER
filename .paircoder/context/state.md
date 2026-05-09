@@ -87,8 +87,6 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
-- **T1.20 done** (auto-updated by hook)
-
 - **T1.20 done** — `WeatherRepository.kt` rewritten to spec section 10.4. OkHttp
   client now hits OWM `/data/2.5/weather` (matches T1.19's DTO; the previous
   implementation accidentally targeted `/data/3.0/onecall` against the legacy
