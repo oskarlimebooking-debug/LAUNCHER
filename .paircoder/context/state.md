@@ -92,6 +92,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.27 done** (auto-updated by hook)
+
 - **T1.27 done (2026-05-09)** — `TripsFragment` was already scaffolded
   (calendar on top, RecyclerView + ListAdapter + DiffUtil below, swipe-to-
   delete, summary line) but three of the five ACs needed pinning:
