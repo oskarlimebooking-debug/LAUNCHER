@@ -51,6 +51,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.16 done** (auto-updated by hook)
+
 - **2026-05-09 planning audit (`/pc-plan`)** — re-ran the Navigator pre-flight on
   `plans/backlogs/backlog-sprint-1-retro-launcher.md`. Plan
   `plan-2026-05-retro-launcher-sprint-1` already exists (in_progress, 49 tasks,
