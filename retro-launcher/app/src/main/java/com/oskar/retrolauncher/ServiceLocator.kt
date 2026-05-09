@@ -12,6 +12,7 @@ import com.oskar.retrolauncher.data.location.LocationRepository
 import com.oskar.retrolauncher.data.media.MediaRepository
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.data.trip.AppDb
+import com.oskar.retrolauncher.data.trip.SharedPrefsTripStateStore
 import com.oskar.retrolauncher.data.trip.TripRecorder
 import com.oskar.retrolauncher.data.trip.TripRepository
 import com.oskar.retrolauncher.data.weather.WeatherRepository
@@ -85,6 +86,7 @@ class ServiceLocator(private val app: Application) {
             dao = db.trips(),
             locationFlow = location.samples,
             geocoder = { lat, lon -> weather.reverseGeocodeBlocking(lat, lon) },
+            store = SharedPrefsTripStateStore(prefs),
         )
     }
 
