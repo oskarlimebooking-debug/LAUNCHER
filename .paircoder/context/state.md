@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.23 done — 23/49 tasks, T1.24 next)
+> Last updated: 2026-05-09 (T1.24 done — 24/49 tasks done, T1.25 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 23/49 tasks done (Phases 1–4 + T1.19–T1.23).
-T1.24 (TripRecorder state machine continuation — next pending Phase 6 task).
+**Status:** Planning complete and reconciled. 24/49 tasks done (Phases 1–4 + T1.19–T1.24).
+T1.25 (next pending Phase 6 task).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -59,9 +59,10 @@ Phase 5 — Weather card (4/4 done)
 - ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
 - ✓ T1.22 WeatherFragment + ViewModel + icon mapping (done 2026-05-09)
 
-Phase 6 — Trip recording (1/5 done)
+Phase 6 — Trip recording (2/5 done)
 - ✓ T1.23 Room schema (TripEntity, TripPoint, TripDao, AppDb) (done 2026-05-09)
-- ⏳ T1.24–T1.27 (P1/P2, Cx 13/5/8/8)
+- ✓ T1.24 TripRecorder state machine (done 2026-05-09)
+- ⏳ T1.25–T1.27 (P2, Cx 5/8/8)
 
 Phase 7 — App grid (0/3 pending)
 - ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
@@ -79,8 +80,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phase 5 (Weather card) is now complete. Continue with `/start-task T1.23`
-(Phase 6 — TripRecorder state machine).
+Phases 1–5 + T1.23–T1.24 done (24/49). Continue with `/start-task T1.25`
+(Phase 6 — LocationService trip recording wire-up, Cx 5, P2).
 
 ### Backlog
 
@@ -88,6 +89,59 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.24 done** — TripRecorder 4-state machine + 5 s buckets + recovery (Phase
+  6, Cx 13, P1). Replaced the prior 2-state `IDLE/RECORDING` recorder with the
+  spec §12.2 graph: `IDLE → DETECTING → RECORDING → STOPPING → IDLE`.
+  - **State machine.** Defaults (now overridable via constructor params):
+    `tripStartSpeedKmh = 10`, `tripStopSpeedKmh = 2`, `detectDurationMs =
+    10_000`, `stopDurationMs = 60_000`. `DETECTING` falls back to `IDLE` if
+    speed drops before the 10 s window closes (no false-start trips). The
+    transient `STOPPING` state surrounds the final DAO insert and resets to
+    `IDLE` on completion.
+  - **Bucket aggregation (AC4).** Samples are accumulated into 5 s windows and
+    one representative `TripPoint` is committed per bucket; jitter ≤5 m is
+    dropped. At 1 Hz GPS this hits the 80 % write-reduction floor exactly (120
+    bucket inserts for 600 raw samples in the test trace).
+  - **Recovery (AC5).** New `TripStateStore` interface with two impls:
+    `InMemoryTripStateStore` (default for tests) and
+    `SharedPrefsTripStateStore` wired through `ServiceLocator`. The recorder
+    snapshots `(startMs, lastSampleMs, distanceM, maxSpeedMs, points)` after
+    every bucket commit. On construction, `recoverPendingTrip()` runs in
+    `scope`: if a snapshot exists with ≥2 points and ≥50 m distance, it is
+    persisted as a `TripEntity` and the store is cleared, so a service kill
+    mid-trip surfaces as a saved trip on next start.
+  - **Snapshot serialization.** `SharedPrefsTripStateStore` encodes the points
+    list as a delimited string (`ts|lat|lon|speed;…`) instead of pulling a
+    JSON dependency onto a hot persistence path.
+  - **AC1 property test** — fed 2 000 random samples (mix of 0–25 m/s and
+    near-zero) and asserted every observed transition matches the allow-list
+    `IDLE→{DETECTING}`, `DETECTING→{RECORDING,IDLE}`,
+    `RECORDING→{STOPPING,IDLE}`, `STOPPING→{IDLE}`. The `RECORDING→IDLE` edge
+    is allowed because `StateFlow` may conflate the brief `STOPPING` value
+    when the insert resolves on the same tick.
+  - **AC2** — 600 s synthetic trace at 20 m/s due north produces exactly one
+    trip with `distanceM` within 5 % of 12 000 m (≤1 % observed thanks to
+    haversine on bucket reps).
+  - **AC3** — 30 s zero-speed window inside `RECORDING` does not split the
+    trip (60 s threshold not crossed); subsequent 30 s of motion + a final
+    65 s stop finalises one trip.
+  - **Files.** `data/trip/TripRecorder.kt` rewritten (251 LOC, well under the
+    400 cap), new `data/trip/TripStateStore.kt` (108 LOC), `ServiceLocator.kt`
+    wires `SharedPrefsTripStateStore(prefs)`, `TripRecorderTest.kt` expanded
+    to 11 cases. Tests: full suite green; arch check clean on all three
+    changed source files.
+
+- **Planning re-validation (`/pc-plan`)** — 2026-05-09. Re-ran planning against
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. No new tasks created;
+  plan is complete and matches the on-disk task files (49/49 present under
+  `.paircoder/tasks/T1.{1..49}.task.md`). Status: 23/49 done (Phases 1–5 +
+  T1.23), T1.24 is the next pending task. Resynced T1.23 CLI status (was
+  "failed", now "done" matching file frontmatter). Trello CLI reports "Not
+  connected"; planning ran via designing-and-implementing path. Dual-plan
+  tracking split (`-2026-05-retro-launcher-sprint-1` (13 tasks) +
+  `-sprint-1-engage` (36 tasks)) still present and intentional; backlog
+  remains the source of truth. No blockers — continue with `/start-task T1.24`.
 
 - **T1.23 done** — Room schema (TripEntity, TripPoint, TripDao, AppDb). The
   schema files already existed on disk (matching spec section 12.3 exactly),
@@ -1108,14 +1162,14 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.22 — WeatherFragment + ViewModel + icon mapping** (P1, depends on
-   T1.21). Final Phase 5 task: bind `WeatherRepository.state` (the StateFlow
-   backing the worker's snapshot) into the existing `WeatherFragment` and
-   `WeatherViewModel`, map OWM icon ids via `WeatherIcons.kt`, and exercise
-   the empty-state (no key / no fix yet) and stale-but-cached (post-reboot)
-   paths. Run via `/start-task T1.22`.
-2. After T1.22 closes Phase 5, Phase 6 (T1.23–T1.27 trip recording) starts
-   with `TripDao` / `Trip` Room entities (T1.23, P1, Cx 8).
+1. **T1.25 — LocationService trip recording wire-up** (P2, Cx 5, depends on
+   T1.24). Connects the live GPS sample stream from `LocationService` to the
+   `TripRecorder` so trips are auto-detected on the running device (the
+   recorder's `init { scope.launch { locationFlow.collect ... } }` already
+   subscribes to `location.samples`; T1.25 is mostly verification + any
+   foreground-service plumbing the spec requires for long drives). Run via
+   `/start-task T1.25`.
+2. T1.26–T1.27 close Phase 6 (TripsFragment list/detail UI, GPX export).
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
