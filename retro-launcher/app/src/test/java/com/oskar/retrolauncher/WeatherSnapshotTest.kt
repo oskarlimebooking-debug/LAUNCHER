@@ -8,22 +8,20 @@ import org.junit.Test
 class WeatherSnapshotTest {
 
     @Test
-    fun `from picks today's high low and current condition`() {
+    fun `from picks current temp_max temp_min and condition`() {
         val dto = WeatherDto(
-            current = WeatherDto.Current(
+            main = WeatherDto.Main(
                 temp = 18.5,
                 feelsLike = 17.0,
-                weather = listOf(
-                    WeatherDto.Condition(id = 803, main = "Clouds", description = "broken", icon = "04d"),
-                ),
+                tempMin = 12.0,
+                tempMax = 22.0,
             ),
-            daily = listOf(
-                WeatherDto.Daily(
-                    temp = WeatherDto.Daily.Temp(min = 12.0, max = 22.0),
-                    weather = emptyList(),
-                ),
+            weather = listOf(
+                WeatherDto.Condition(id = 803, icon = "04d", main = "Clouds", description = "broken"),
             ),
-            timezone = "Europe/Ljubljana",
+            wind = WeatherDto.Wind(speed = 3.4),
+            name = "Ljubljana",
+            dt = 1715250000L,
         )
 
         val snap = WeatherSnapshot.from(dto, city = "Ljubljana", asOf = 12345L)
@@ -38,17 +36,15 @@ class WeatherSnapshotTest {
     }
 
     @Test
-    fun `from falls back to current temp when daily empty`() {
+    fun `from falls back to current temp when temp_min temp_max missing`() {
         val dto = WeatherDto(
-            current = WeatherDto.Current(
-                temp = 5.0,
-                feelsLike = 4.0,
-                weather = listOf(
-                    WeatherDto.Condition(id = 800, main = "Clear", description = "clear", icon = "01d"),
-                ),
+            main = WeatherDto.Main(temp = 5.0, feelsLike = 4.0),
+            weather = listOf(
+                WeatherDto.Condition(id = 800, icon = "01d", description = "clear"),
             ),
-            daily = emptyList(),
-            timezone = null,
+            wind = null,
+            name = "—",
+            dt = 0L,
         )
 
         val snap = WeatherSnapshot.from(dto, city = "—", asOf = 0L)
@@ -61,9 +57,11 @@ class WeatherSnapshotTest {
     @Test
     fun `from defaults iconId 800 when no weather conditions`() {
         val dto = WeatherDto(
-            current = WeatherDto.Current(temp = 0.0, feelsLike = 0.0, weather = emptyList()),
-            daily = emptyList(),
-            timezone = null,
+            main = WeatherDto.Main(temp = 0.0, feelsLike = 0.0),
+            weather = emptyList(),
+            wind = null,
+            name = "x",
+            dt = 0L,
         )
         val snap = WeatherSnapshot.from(dto, city = "x", asOf = 0L)
         assertEquals(800, snap.iconId)

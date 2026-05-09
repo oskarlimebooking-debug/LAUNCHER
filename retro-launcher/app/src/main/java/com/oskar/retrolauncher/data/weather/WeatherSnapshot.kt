@@ -13,14 +13,16 @@ data class WeatherSnapshot(
     val asOfMs: Long,
 ) {
     companion object {
-        fun from(dto: WeatherDto, city: String, asOf: Long): WeatherSnapshot {
-            val today = dto.daily.firstOrNull()
+        // `internal` — WeatherDto is module-private, so this transform is too.
+        // Repository (same module) calls into it; UI never sees a DTO.
+        internal fun from(dto: WeatherDto, city: String, asOf: Long): WeatherSnapshot {
+            val condition = dto.weather.firstOrNull()
             return WeatherSnapshot(
-                tempC = dto.current.temp,
-                highC = today?.temp?.max ?: dto.current.temp,
-                lowC = today?.temp?.min ?: dto.current.temp,
-                iconId = dto.current.weather.firstOrNull()?.id ?: 800,
-                condition = dto.current.weather.firstOrNull()?.description.orEmpty(),
+                tempC = dto.main.temp,
+                highC = dto.main.tempMax ?: dto.main.temp,
+                lowC = dto.main.tempMin ?: dto.main.temp,
+                iconId = condition?.id ?: 800,
+                condition = condition?.description.orEmpty(),
                 city = city,
                 asOfMs = asOf,
             )
