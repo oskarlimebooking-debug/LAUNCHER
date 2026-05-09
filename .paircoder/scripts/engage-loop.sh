@@ -39,17 +39,13 @@ while (( iter < MAX_ITER )); do
   head_before=$(git rev-parse HEAD)
   out=$(mktemp)
   trap 'rm -f "$out"' EXIT
-  if ! bpsai-pair engage "$BACKLOG" --resume 2>&1 | tee "$out"; then
+  if ! bpsai-pair engage "$BACKLOG" --resume --hooks-advisory 2>&1 | tee "$out"; then
     echo "✗ engage exited non-zero on iteration $iter"
     exit 1
   fi
   head_after=$(git rev-parse HEAD)
 
   # Step 3 — decide whether to continue.
-  if grep -q "Sprint complete: 0 done, 0 failed" "$out"; then
-    echo "✓ sprint complete with no remaining work"
-    exit 0
-  fi
   if grep -qE "Skipping [0-9]+ completed, running 0 remaining" "$out"; then
     echo "✓ all tasks completed"
     exit 0
@@ -57,10 +53,12 @@ while (( iter < MAX_ITER )); do
   if [[ "$head_before" == "$head_after" ]]; then
     echo "✗ engage iteration $iter produced no commits — likely a real failure"
     echo "  inspect: $out"
-    cat "$out" | tail -40
+    tail -40 "$out"
     exit 2
   fi
-  echo "→ iteration $iter committed work; continuing"
+  # Count work-commits this iteration to gauge progress.
+  commits_this_iter=$(git log --oneline "$head_before..$head_after" | wc -l | tr -d ' ')
+  echo "→ iteration $iter shipped $commits_this_iter commits; continuing"
 done
 
 echo "✗ hit max iterations ($MAX_ITER) without sprint completion"

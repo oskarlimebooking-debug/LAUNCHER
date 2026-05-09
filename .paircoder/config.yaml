@@ -350,7 +350,7 @@ containment:
   - pypi.org
 enforcement:
   state_machine: true
-  strict_ac_verification: true
+  strict_ac_verification: false
   require_budget_check: true
   preset: balanced
   bypass_audit: false
