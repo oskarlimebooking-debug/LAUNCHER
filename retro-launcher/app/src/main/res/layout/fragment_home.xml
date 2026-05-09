@@ -13,7 +13,16 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.40" />
 
-    <!-- Left column: media tile (top) + weather tile (bottom) -->
+    <!-- Horizontal guideline at 50% of the left panel: media on top half,
+         weather on bottom half (T1.22 AC5). -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/left_split"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.50" />
+
+    <!-- Left column: media tile (top half) + weather tile (bottom half) -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/media_slot"
         android:name="com.oskar.retrolauncher.ui.media.MediaFragment"
@@ -23,18 +32,17 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/home_split"
-        app:layout_constraintBottom_toTopOf="@id/weather_slot"
-        app:layout_constraintVertical_chainStyle="packed" />
+        app:layout_constraintBottom_toTopOf="@id/left_split" />
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/weather_slot"
         android:name="com.oskar.retrolauncher.ui.weather.WeatherFragment"
         android:layout_width="0dp"
-        android:layout_height="@dimen/weather_tile_height"
+        android:layout_height="0dp"
         android:layout_margin="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toStartOf="@id/home_split"
-        app:layout_constraintTop_toBottomOf="@id/media_slot"
+        app:layout_constraintTop_toBottomOf="@id/left_split"
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <!-- Right column: ViewPager swipes between embed / grid / trips -->

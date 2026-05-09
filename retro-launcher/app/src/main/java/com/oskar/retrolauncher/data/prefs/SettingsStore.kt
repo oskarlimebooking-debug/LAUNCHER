@@ -7,10 +7,23 @@ import kotlinx.coroutines.flow.callbackFlow
 
 enum class Units { METRIC, IMPERIAL }
 
+enum class TempUnit { CELSIUS, FAHRENHEIT }
+
+enum class SpeedUnit { METERS_PER_SECOND, KILOMETERS_PER_HOUR, MILES_PER_HOUR }
+
 class SettingsStore(private val prefs: SharedPreferences) {
 
     val units: Units
         get() = if (prefs.getString(KEY_UNITS, "metric") == "metric") Units.METRIC else Units.IMPERIAL
+
+    // Derived from `units` for now. T1.31+ may add a separate pref for m/s as a
+    // metric speed override; until then the metric → km/h, imperial → mph rule
+    // matches the existing speedometer behaviour.
+    val tempUnit: TempUnit
+        get() = if (units == Units.METRIC) TempUnit.CELSIUS else TempUnit.FAHRENHEIT
+
+    val speedUnit: SpeedUnit
+        get() = if (units == Units.METRIC) SpeedUnit.KILOMETERS_PER_HOUR else SpeedUnit.MILES_PER_HOUR
 
     val panelRatioPercent: Int get() = prefs.getInt(KEY_PANEL_RATIO, 40).coerceIn(30, 70)
 

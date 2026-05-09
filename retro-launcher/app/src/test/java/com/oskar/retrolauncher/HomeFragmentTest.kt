@@ -60,4 +60,37 @@ class HomeFragmentTest {
             0.40f, homeSplitPercent, 1e-4f,
         )
     }
+
+    /**
+     * T1.22 AC5 — the weather tile must be exactly half the height of the left
+     * panel. We enforce that with a horizontal `left_split` guideline at
+     * percent=0.5: media_slot pins to its top, weather_slot pins to its bottom.
+     */
+    @Test
+    fun `fragment_home has left_split guideline at 0_50 so weather is half the left panel`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val parser = ctx.resources.getLayout(R.layout.fragment_home)
+
+        var sawLeftSplit = false
+        var leftSplitPercent = Float.NaN
+
+        var event = parser.eventType
+        while (event != XmlPullParser.END_DOCUMENT) {
+            if (event == XmlPullParser.START_TAG) {
+                if (parser.getAttributeResourceValue(NS_ANDROID, "id", 0) == R.id.left_split) {
+                    sawLeftSplit = true
+                    leftSplitPercent = parser.getAttributeFloatValue(
+                        NS_APP, "layout_constraintGuide_percent", Float.NaN,
+                    )
+                }
+            }
+            event = parser.next()
+        }
+
+        assertTrue("left_split horizontal guideline must be declared (T1.22 AC5)", sawLeftSplit)
+        assertEquals(
+            "left_split guideline must be at 0.50 — weather tile is exactly half the left panel",
+            0.50f, leftSplitPercent, 1e-4f,
+        )
+    }
 }

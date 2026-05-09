@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.21 done — 21/49 tasks, T1.22 next)
+> Last updated: 2026-05-09 (T1.22 done — 22/49 tasks, T1.23 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 21/49 tasks done (Phases 1–4 + T1.19 + T1.20 + T1.21).
-T1.22 (WeatherFragment + ViewModel + icon mapping) is the next pending task.
+**Status:** Planning complete and reconciled. 22/49 tasks done (Phases 1–4 + T1.19–T1.22).
+T1.23 (TripRecorder state machine — Phase 6 kickoff) is the next pending task.
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -53,11 +53,11 @@ Phase 4 — Media player (4/4 done)
 - ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
 - ✓ T1.18 Album-art Palette dominant-color extraction (done 2026-05-09)
 
-Phase 5 — Weather card (3/4 done)
+Phase 5 — Weather card (4/4 done)
 - ✓ T1.19 WeatherDto with Moshi adapters (done 2026-05-09)
 - ✓ T1.20 WeatherRepository OkHttp client (done 2026-05-09)
 - ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
-- ⏳ T1.22 WeatherFragment + ViewModel + icon mapping (next; P1, Cx 5)
+- ✓ T1.22 WeatherFragment + ViewModel + icon mapping (done 2026-05-09)
 
 Phase 6 — Trip recording (0/5 pending)
 - ⏳ T1.23–T1.27 (P1/P2, Cx 8/13/5/8/8)
@@ -78,7 +78,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Continue with `/start-task T1.22`.
+Phase 5 (Weather card) is now complete. Continue with `/start-task T1.23`
+(Phase 6 — TripRecorder state machine).
 
 ### Backlog
 
@@ -86,6 +87,54 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.22 done** — WeatherFragment + ViewModel + icon mapping. 6 files of source
+  + 4 new test files (180 tests pass; 0 failures). Highlights:
+  - **Icon mapping (AC1).** Added `iconResForCode(code: String)` covering all
+    18 OWM icon codes (`01d` … `50n`) → local SVG drawables. Day/night codes
+    share the same drawable for now (no moon glyph yet); kept the legacy
+    `iconResForCondition(Int)` since the snapshot still carries the numeric
+    `iconId` for callers that want it.
+  - **Snapshot extension.** `WeatherSnapshot` gained `feelsLikeC`, `windMs`,
+    and `iconCode` so the binding can render feels-like, wind, and the
+    string-coded icon without re-deriving them. Old cached JSON in
+    SharedPreferences will fail to deserialize (Moshi non-null fields), but
+    `loadCached()` already wraps in `runCatching` so the user just sees the
+    placeholder until the next refresh lands.
+  - **Settings split (AC3/AC4).** `SettingsStore` exposes `tempUnit` and
+    `speedUnit` derived from the existing `units` (METRIC → CELSIUS / KMH,
+    IMPERIAL → FAHRENHEIT / MPH). `SpeedUnit.METERS_PER_SECOND` is wired
+    through formatters but not yet selectable from the UI — T1.31+ can add a
+    pref for it without changing the call sites.
+  - **Layout (AC5).** Added a horizontal `left_split` guideline at 0.5 in
+    `fragment_home.xml`; media tile pins to its top, weather tile pins to its
+    bottom — the weather tile is now exactly half of the left panel. Tile
+    layout (`fragment_weather.xml`) gained `feels_like`, `condition`, and
+    `wind` TextViews per spec section 10.6.
+  - **Placeholder (AC2).** When `state` is null, every text view clears and
+    the icon falls back to `ic_unknown`; only `temp` shows "—" so the empty
+    tile reads as "loading" not "broken".
+  - Tests: `WeatherIconsTest` (18 codes), `WeatherFragmentTest` (layout IDs +
+    no-args ctor), `WeatherViewModelTest` (formatters), `SettingsStoreUnitsTest`
+    (default + imperial flip), and extended `HomeFragmentTest` for the 0.5
+    guideline + `WeatherSnapshotTest` for new fields. arch check clean on all
+    five modified source files.
+
+- **Planning re-validation (`/pc-plan`)** — 2026-05-09. Re-ran planning against
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. No new tasks created;
+  plan is complete and matches the on-disk task files (49/49 present under
+  `.paircoder/tasks/T1.{1..49}.task.md`). Status: 21/49 done (Phases 1–4 +
+  T1.19/T1.20/T1.21), T1.22 is the next pending task. Resynced T1.20 and T1.21
+  CLI status (was "failed" from the prior engage run, now "done" matching file
+  frontmatter). Trello CLI reports "Not connected" despite `trello.enabled:true`
+  in config — sync deferred; planning ran via designing-and-implementing path.
+  Dual-plan tracking split (`-2026-05-retro-launcher-sprint-1` (13 tasks) +
+  `-sprint-1-engage` (36 tasks)) still present and intentional; backlog
+  remains the source of truth. No blockers — continue with `/start-task T1.22`.
+
+- **T1.21 done** (auto-updated by hook)
+
+- **T1.20 done** (auto-updated by hook)
 
 - **T1.21 done** — `WeatherWorker.kt` upgraded from a one-line stub to spec
   section 10.5. The worker still delegates to `App.weather` / `App.location`,

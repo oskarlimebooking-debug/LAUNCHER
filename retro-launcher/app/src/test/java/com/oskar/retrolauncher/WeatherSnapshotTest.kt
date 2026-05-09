@@ -27,9 +27,12 @@ class WeatherSnapshotTest {
         val snap = WeatherSnapshot.from(dto, city = "Ljubljana", asOf = 12345L)
 
         assertEquals(18.5, snap.tempC, 0.0001)
+        assertEquals(17.0, snap.feelsLikeC, 0.0001)
         assertEquals(22.0, snap.highC, 0.0001)
         assertEquals(12.0, snap.lowC, 0.0001)
         assertEquals(803, snap.iconId)
+        assertEquals("04d", snap.iconCode)
+        assertEquals(3.4, snap.windMs, 0.0001)
         assertEquals("broken", snap.condition)
         assertEquals("Ljubljana", snap.city)
         assertEquals(12345L, snap.asOfMs)
@@ -52,6 +55,8 @@ class WeatherSnapshotTest {
         assertEquals(5.0, snap.highC, 0.0001)
         assertEquals(5.0, snap.lowC, 0.0001)
         assertEquals(800, snap.iconId)
+        assertEquals("01d", snap.iconCode)
+        assertEquals(0.0, snap.windMs, 0.0001) // null wind defaults to 0
     }
 
     @Test
