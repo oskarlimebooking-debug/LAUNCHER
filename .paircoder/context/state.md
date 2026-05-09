@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.20 done — 20/49 tasks, T1.21 next)
+> Last updated: 2026-05-09 (T1.21 done — 21/49 tasks, T1.22 next)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 20/49 tasks done (Phases 1–4 + T1.19 + T1.20).
-T1.21 (WeatherWorker periodic refresh) is the next pending task.
+**Status:** Planning complete and reconciled. 21/49 tasks done (Phases 1–4 + T1.19 + T1.20 + T1.21).
+T1.22 (WeatherFragment + ViewModel + icon mapping) is the next pending task.
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -53,11 +53,11 @@ Phase 4 — Media player (4/4 done)
 - ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
 - ✓ T1.18 Album-art Palette dominant-color extraction (done 2026-05-09)
 
-Phase 5 — Weather card (2/4 done)
+Phase 5 — Weather card (3/4 done)
 - ✓ T1.19 WeatherDto with Moshi adapters (done 2026-05-09)
 - ✓ T1.20 WeatherRepository OkHttp client (done 2026-05-09)
-- ⏳ T1.21 WeatherWorker periodic refresh (next; P1, Cx 5)
-- ⏳ T1.22 WeatherFragment + ViewModel + icon mapping (P1, Cx 5)
+- ✓ T1.21 WeatherWorker periodic refresh (done 2026-05-09)
+- ⏳ T1.22 WeatherFragment + ViewModel + icon mapping (next; P1, Cx 5)
 
 Phase 6 — Trip recording (0/5 pending)
 - ⏳ T1.23–T1.27 (P1/P2, Cx 8/13/5/8/8)
@@ -78,7 +78,7 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Continue with `/start-task T1.21`.
+Continue with `/start-task T1.22`.
 
 ### Backlog
 
@@ -86,6 +86,42 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.21 done** — `WeatherWorker.kt` upgraded from a one-line stub to spec
+  section 10.5. The worker still delegates to `App.weather` / `App.location`,
+  but the work-classification logic is extracted to a top-level
+  `runWeatherRefresh(weather, location)` so it's unit-testable without
+  WorkManager. Classification:
+  - blank `OWM_API_KEY` → `Result.failure` (permanent — nothing for WorkManager
+    to retry; logged via Timber so it shows up in logcat without crashing)
+  - no last-known location → `Result.retry` (LocationService just hasn't
+    reported yet; the next 15-min tick should have a fix)
+  - `IOException` from the refresh → `Result.retry` (transient: airplane mode,
+    captive portal, DNS hiccup, server timeout)
+  - any other failure (parse error, 4xx like a revoked key) → `Result.failure`
+  - on success the snapshot is already persisted via `WeatherRepository.refresh`
+    (StateFlow + SharedPreferences `weather/snap`), satisfying AC4 — the tile
+    can show stale data after reboot before the first refresh lands.
+  - `WeatherRepository.refresh` now returns `Result<WeatherSnapshot>` (was
+    `Unit`) so the worker can inspect the failure mode. Existing call sites
+    (`WeatherViewModel`) ignore the return value as before.
+  - Added `WeatherRepository.isConfigured` (`apiKey.isNotBlank()`) so the
+    worker can short-circuit before a network call.
+  - `scheduleWeather()` now tags work with `WeatherWorker.WORK_TAG` =
+    `"weather-refresh"` so AC1 can verify enqueuing via
+    `WorkManager.getWorkInfosByTag`. Unique-name `WORK_NAME` = `"weather"`
+    + `KEEP` policy keeps it idempotent — both `ServiceLocator.startup` and
+    `BootReceiver` may call it without duplicating.
+  - `BootReceiver` now also calls `scheduleWeather()` on `BOOT_COMPLETED` /
+    `LOCKED_BOOT_COMPLETED` (AC2) — safety net for ROMs that wipe WorkManager
+    DB or sideloaded APK upgrades. Wrapped in `runCatching` so a missing
+    WorkManager init can't crash boot.
+  - Tests: `WeatherWorkerTest` covers all 5 ACs + idempotency (7 cases via
+    MockWebServer + `LocationRepository`), `BootReceiverTest` covers AC2 for
+    both broadcast actions via `WorkManagerTestInitHelper`. All 9 new tests
+    pass; full suite green.
+  - Test infra: added `androidx.work:work-testing` (matching work-runtime-ktx
+    version 2.9.0) to `libs.versions.toml` and the test source set.
 
 - **T1.20 done** — `WeatherRepository.kt` rewritten to spec section 10.4. OkHttp
   client now hits OWM `/data/2.5/weather` (matches T1.19's DTO; the previous
@@ -981,18 +1017,14 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.20 — WeatherRepository OkHttp client** (P1, depends on T1.19). Wires
-   the `WeatherDto` from T1.19 into a real network call: OkHttp with 10 s
-   timeouts + gzip + 5 MB on-disk LRU cache, `fetch(lat, lon)` calling
-   `/data/2.5/weather`, Nominatim reverse geocode with the proper User-Agent,
-   DTO → `WeatherSnapshot` mapping, `Result<WeatherSnapshot>` returns.
-   Repository tests via `MockWebServer` covering ≥4 scenarios (success,
-   401, timeout, malformed JSON). Note: existing `WeatherRepository.kt`
-   already has scaffolding using the OneCall URL — T1.20 retargets the URL
-   and adds the cache + Result return type. Run via `/start-task T1.20`.
-2. Then T1.21 (WeatherWorker periodic refresh) and T1.22 (WeatherFragment +
-   ViewModel + icon mapping) round out Phase 5; Phase 6 (T1.23–T1.27 trip
-   recording) follows.
+1. **T1.22 — WeatherFragment + ViewModel + icon mapping** (P1, depends on
+   T1.21). Final Phase 5 task: bind `WeatherRepository.state` (the StateFlow
+   backing the worker's snapshot) into the existing `WeatherFragment` and
+   `WeatherViewModel`, map OWM icon ids via `WeatherIcons.kt`, and exercise
+   the empty-state (no key / no fix yet) and stale-but-cached (post-reboot)
+   paths. Run via `/start-task T1.22`.
+2. After T1.22 closes Phase 5, Phase 6 (T1.23–T1.27 trip recording) starts
+   with `TripDao` / `Trip` Room entities (T1.23, P1, Cx 8).
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
