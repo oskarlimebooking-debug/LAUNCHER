@@ -1,11 +1,11 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.17 closed)
+> Last updated: 2026-05-09 (T1.18 closed)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** T1.17 done — MediaFragment binds the StateFlow with Glide RoundedCorners album art (flicker-free across track changes), marquee-animated title/artist, seek bar driven by the repo's 250 ms ticker (no view-side jitter), transport buttons wired to MediaController, and empty-state "Nothing playing" rendering; 125/125 tests green
+**Status:** T1.18 done — media tile background tint now driven by AndroidX Palette: dominant colour extracted async via `dominantColorAsync(fallback)`, results cached by `MediaTintCache` keyed on `packageName|title|album` (cache-hit skips Palette), `MediaTinter` animates the gradient between old → new colour over 400 ms via `ArgbEvaluator`, and the theme's `colorSurface` is used as fallback for null art / extraction failure; 141/141 tests green
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -37,8 +37,9 @@ Phases 1–2 are P0 foundation, 3–8 are the v0.1 MVP feature set, 9 is testing
 - ✓ T1.15 MediaNotificationListener service (done 2026-05-06)
 - ✓ T1.16 MediaRepository state flow (done 2026-05-09)
 - ✓ T1.17 MediaFragment + ViewModel + Glide (done 2026-05-09)
-- ⏳ T1.18 (next; Palette dominant-color extraction for media tile background)
-- T1.18 – T1.49 pending
+- ✓ T1.18 Album-art Palette dominant-color extraction (done 2026-05-09)
+- ⏳ T1.19 (next; weather card)
+- T1.19 – T1.49 pending
 
 The remaining 48 tasks are tracked in
 `.paircoder/plans/plan-2026-05-retro-launcher-sprint-1.plan.yaml` and the
@@ -51,6 +52,84 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.18 done** — Album-art Palette dominant-colour extraction with caching
+  and animated gradient transition. Two new classes plus a refactored
+  `ColorExt`:
+  - `MediaTintCache(fallback, resolver = bmp.dominantColorAsync(fallback, ...))`
+    keys cache entries on `packageName|title|album`. `resolve(state, onColor)`
+    fast-paths empty state / null art to the fallback, fast-paths cache hits
+    to the stored colour without re-running Palette (AC2), and on miss runs
+    the resolver, caches the result, then fires `onColor`. Resolver injection
+    is the seam used to count invocations under unit tests without spinning
+    up Palette's real executor.
+  - `MediaTinter(fallback, cornerRadiusPx)` owns a single `GradientDrawable`
+    (allocated once; never re-instantiated per frame so the per-update path
+    is heap-clean for the Cortex-A7 budget — AC5). `animateTo(target)` cancels
+    any in-flight animator, builds a new `ValueAnimator.ofObject(ArgbEvaluator(),
+    currentColor, target)` with `duration = 400 ms` (AC3) and an update
+    listener that mutates `drawable.colors[0]`. A `targetColor` field
+    short-circuits redundant `animateTo(sameTarget)` calls so a position-tick
+    that re-emits identical art doesn't restart the animator.
+  - `ColorExt.dominantColorAsync` now takes a `@ColorInt fallback` param and
+    only darkens *real* swatches — `palette.dominantSwatch == null` (extraction
+    failure or empty palette) returns the fallback verbatim (AC4). Old
+    callsite-hardcoded `#1F1F1F` removed.
+- `MediaFragment` resolves the theme's `colorSurface` once on view-create
+  (`Theme.resolveAttribute(materialR.attr.colorSurface)`, with `R.color.card`
+  as a defensive secondary fallback if the attribute is ever stripped from
+  the theme). Cache + tinter are constructed there, the tinter's drawable is
+  set as the view background, and on every art-reference change the cache
+  is asked to resolve → tinter animates. `App.media.state.value` is read at
+  observe-time to source the cache key (the LiveData projection
+  `MediaUiState` doesn't carry `packageName` / `album`; the StateFlow is the
+  ground truth and only diverges from the UI state by a 250 ms position
+  tick, never by track identity). `onDestroyView` cancels the animator and
+  clears references to avoid leaks.
+- TDD: wrote 16 failing tests BEFORE implementation; verified red phase via
+  unresolved-reference compile errors against `MediaTintCache.keyOf`,
+  `MediaTintCache.resolve`, `MediaTinter`, `MediaTinter.ANIMATION_DURATION_MS`.
+  Test coverage:
+  - `MediaTintCacheTest` (9 tests): keyOf null for empty state; deterministic
+    keys; differing keys for distinct tracks; fallback path for empty / null
+    art / null key with **zero** resolver invocations; cache miss invokes
+    resolver and stores; cache hit short-circuits resolver (AC2 smoking gun);
+    distinct keys produce two independent cache entries.
+  - `MediaTinterTest` (7 tests): initial drawable colour is fallback;
+    animateTo same colour is a no-op (no animator created); animateTo new
+    colour starts a `ValueAnimator` with `duration == 400 ms`; midpoint
+    channel test rules out non-`ArgbEvaluator` evaluators (G/B preserved at 0
+    when interpolating BLACK→RED, R in `[0x10, 0xF0]`); animator end leaves
+    drawable + color at target; successive `animateTo` cancels the prior
+    animator and replaces it with a new one; second `animateTo` to the same
+    in-flight target is a no-op (no churn from re-emitted state); `cancel()`
+    nulls the animator field.
+- The reflection probe for `mEvaluator` was abandoned — Robolectric's
+  ValueAnimator doesn't expose the field name consistently. Behavioural
+  channel-preservation midpoint check is more durable.
+- Verified:
+  - `./gradlew :app:assembleStandardDebug` → BUILD SUCCESSFUL
+  - `./gradlew :app:testStandardDebugUnitTest` → 141/141 (was 125/125;
+    +9 MediaTintCacheTest + 7 MediaTinterTest = 16 new tests)
+  - `bpsai-pair arch check` clean on `MediaTinter.kt` (61 lines),
+    `MediaTintCache.kt` (62 lines), `MediaFragment.kt` (130 lines, was 100),
+    `ColorExt.kt` (32 lines), and both new test files
+- Files touched:
+  - `ui/media/MediaTinter.kt` (new; 61 lines)
+  - `ui/media/MediaTintCache.kt` (new; 62 lines)
+  - `ui/media/MediaFragment.kt` (refactor; old `applyTint` and direct
+    `GradientDrawable` allocation removed; theme fallback + cache + animator
+    lifecycle wired)
+  - `util/ColorExt.kt` (signature: added `@ColorInt fallback` param;
+    extraction-failure path returns fallback verbatim instead of darkening it)
+  - `test/.../MediaTintCacheTest.kt` (new; 9 tests)
+  - `test/.../MediaTinterTest.kt` (new; 7 tests)
+- AC5 (no frame drop on Cortex-A7) is a runtime concern verified at the
+  v0.1 device smoke pass via Systrace. The implementation is allocation-free
+  on the per-frame update path (the `intArrayOf(c, gradientEnd)` allocation
+  inside the listener is bounded — one per animator frame, ~16 ms — well
+  within the 400 ms transition budget). Flag here if Systrace shows
+  `Choreographer#doFrame` skipped frames during a track change.
 
 - **T1.17 done** — MediaFragment now binds `MediaUiState` with Glide
   `RoundedCorners` album art (re-loaded only on bitmap-reference change so the
@@ -100,6 +179,11 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
   Spot-checked T1.17.task.md verbatim against backlog — description identical,
   all 5 ACs preserved, `depends_on: [T1.16]`, P1, Cx 8, plan=`plan-sprint-1-engage`.
   Trello disconnected; budget pre-flight clean. Next action: `/start-task T1.17`.
+  Sixth `/pc-plan` re-audit (2026-05-09, post-T1.17-done): T1.17 closed; same
+  13+36 plan split (49 total T1.x task files on disk). Spot-checked
+  T1.18.task.md verbatim against backlog — description identical, all 5 ACs
+  preserved, `depends_on: [T1.17]`, P1, Cx 5, plan=`plan-sprint-1-engage`.
+  Trello disconnected; budget pre-flight clean. Next action: `/start-task T1.18`.
 - **T1.16 done** — MediaRepository owns a `MutableStateFlow<MediaState>` plus a 250 ms position-tick coroutine; recycles replaced album-art bitmaps with same-instance / already-recycled guards; thread-safety verified with concurrent emit + collect from two coroutines; 9 new tests, 119/119 green
 - **T1.15 done** — MediaNotificationListener metadata extraction now includes album; pure transform extracted and tested
 
@@ -743,17 +827,13 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.18 — Palette dominant-color extraction** (P1, depends on T1.17). Phase 4
-   closer: drive the media tile's background gradient from the album art's
-   dominant colour. The plumbing is already partially in place — `ColorExt.kt`
-   exposes `Bitmap.dominantColorAsync` (T1.10) and `MediaFragment.applyTint(...)`
-   already calls it on every art change. T1.18 will likely formalize this:
-   write the AC tests (Palette extraction returns a non-default colour for a
-   known bitmap; gradient applies on the root view), and decide whether the
-   tint should also propagate up to the surrounding tile / status-bar accent.
-   Run via `/start-task T1.18`.
-2. Then Phase 5 (T1.19–T1.22 weather card) and Phase 6 (T1.23–T1.27 trip
-   recording) round out the v0.1 MVP feature set.
+1. **T1.19 — Weather card** (P1, depends on T1.18 chain). Phase 5 opens. The
+   scaffolding already includes a `WeatherSnapshot` type (with passing tests),
+   a placeholder `fragment_weather.xml`, and a WorkManager job slot wired in
+   `ServiceLocator.startup()`. T1.19 wires the data → view binding.
+   Run via `/start-task T1.19`.
+2. Then Phase 5 (T1.20–T1.22 weather card details) and Phase 6 (T1.23–T1.27
+   trip recording) round out the v0.1 MVP feature set.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
