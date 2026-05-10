@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-10 (T1.29 done — Phase 7 now 2/3, next is T1.30)
+> Last updated: 2026-05-10 (T1.30 done — Phase 7 complete (3/3); next is T1.31)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 29/49 tasks done (Phase 7: T1.28–T1.29 done; T1.30 pending).
-T1.30 (next pending — Phase 7 RailFragment pinned-apps strip).
+**Status:** 30/49 tasks done (Phase 7 complete: T1.28–T1.30 done).
+T1.31 (next pending — Phase 8, SettingsActivity scaffold).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -66,10 +66,10 @@ Phase 6 — Trip recording (5/5 done)
 - ✓ T1.26 TripCalendarView heatmap (done 2026-05-09)
 - ✓ T1.27 TripsFragment + adapter (done 2026-05-09)
 
-Phase 7 — App grid (2/3 done, 1 pending)
+Phase 7 — App grid (3/3 done)
 - ✓ T1.28 AppListRepository PackageManager scanning (done 2026-05-10)
 - ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
-- ⏳ T1.30 RailFragment pinned-apps strip (P2, Cx 5)
+- ✓ T1.30 RailFragment pinned-apps strip (done 2026-05-10)
 
 Phase 8 — Settings and first-run (0/4 pending)
 - ⏳ T1.31–T1.34 (P1/P1/P1/P2, Cx 5/5/8/3)
@@ -84,8 +84,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–6 done + T1.28–T1.29 (29/49). Continue with `/start-task T1.30`
-(Phase 7 — RailFragment pinned-apps strip, Cx 5, P2).
+Phases 1–7 done (30/49). Continue with `/start-task T1.31`
+(Phase 8 — SettingsActivity scaffold, Cx 5, P1).
 
 ### Backlog
 
@@ -93,6 +93,34 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.30 done (2026-05-10)** — Pinned-app rail integrated into the AppGrid
+  page along the bottom of the right panel:
+  • New `SettingsStore.pinnedApps: List<String>` (package names) +
+    `setPinnedApps(...)` + `MAX_PINNED = 8`. JSON-encoded under key
+    `pinned_apps`, mirrors the `appOrder` pattern.
+  • `AppListRepository` refactored: persistence migrated from a private
+    `("rail")` SharedPreferences file to `SettingsStore.pinnedApps`. `pin`,
+    `unpin`, `isPinned` now operate on package names. `MAX_RAIL = 8` with
+    FIFO eviction (oldest entry shifts out when adding a 9th). Exposes
+    `pinnedPackages: StateFlow<List<String>>` and `rail: StateFlow<List<AppEntry>>`
+    (rail derives by joining pinned package names with the master scan,
+    silently dropping uninstalled entries).
+  • `AppGridFragment` hosts a horizontal RecyclerView for the rail at the
+    bottom of `fragment_grid.xml`. Long-press menu uses `entry.packageName`
+    for pin/unpin checks. Tap on a rail tile launches the same
+    `Intent.ACTION_MAIN + CATEGORY_LAUNCHER + componentName` flow as the
+    grid.
+  • Layout work: `item_rail.xml` icon sized via new `rail_icon` dimen
+    (24dp / 28dp w1024dp — half of `grid_icon`). `activity_main.xml` and
+    `MainActivity.kt` cleaned up to remove the legacy left-edge vertical
+    rail (the rail now lives inside the AppGrid page only, per spec).
+  • Tests: `SettingsStorePinnedAppsTest` (default empty / set / persist /
+    clear) and `AppListRepositoryRailTest` (MAX_RAIL=8, no-dup pin, FIFO
+    eviction, persistence across instances, rail flow ignores uninstalled
+    packages). Full `:app:testStandardDebugUnitTest` green; arch check
+    clean on all four touched source files; `assembleStandardDebug`
+    succeeds.
 
 - **T1.29 done** (auto-updated by hook)
 
