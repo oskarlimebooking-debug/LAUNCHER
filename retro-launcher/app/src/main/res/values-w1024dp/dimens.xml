@@ -14,6 +14,8 @@
     <dimen name="album_art_corner">12dp</dimen>
     <dimen name="grid_icon">56dp</dimen>
     <dimen name="grid_label">12sp</dimen>
+    <!-- T1.30: rail tile is half the size of a grid tile -->
+    <dimen name="rail_icon">28dp</dimen>
 
     <!-- Layout grid dimens (T1.4 AC) -->
     <dimen name="gutter">12dp</dimen>

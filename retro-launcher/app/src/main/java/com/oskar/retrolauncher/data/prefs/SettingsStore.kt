@@ -66,6 +66,31 @@ class SettingsStore(private val prefs: SharedPreferences) {
         edit.apply()
     }
 
+    /**
+     * Ordered list of package names pinned to the rail (T1.30). The list is
+     * the source of truth for rail ordering; order matters because the rail
+     * enforces FIFO eviction at [MAX_PINNED]. Empty when nothing is pinned.
+     */
+    val pinnedApps: List<String>
+        get() {
+            val raw = prefs.getString(KEY_PINNED_APPS, null) ?: return emptyList()
+            return runCatching {
+                val arr = JSONArray(raw)
+                (0 until arr.length()).map { arr.getString(it) }
+            }.getOrElse { emptyList() }
+        }
+
+    fun setPinnedApps(packages: List<String>) {
+        val edit = prefs.edit()
+        if (packages.isEmpty()) {
+            edit.remove(KEY_PINNED_APPS)
+        } else {
+            val arr = JSONArray().apply { packages.forEach { put(it) } }
+            edit.putString(KEY_PINNED_APPS, arr.toString())
+        }
+        edit.apply()
+    }
+
     /** Cold + hot stream of changes for the given key. */
     fun changes(key: String): Flow<String> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, k ->
@@ -92,5 +117,9 @@ class SettingsStore(private val prefs: SharedPreferences) {
         const val KEY_SPEED_THRESHOLD = "speed_threshold"
         const val KEY_SHOW_LOC_STATUS = "show_loc_status"
         const val KEY_APP_ORDER = "app_order"
+        const val KEY_PINNED_APPS = "pinned_apps"
+
+        /** Hard cap on rail entries (T1.30 AC1 / AC3). */
+        const val MAX_PINNED = 8
     }
 }

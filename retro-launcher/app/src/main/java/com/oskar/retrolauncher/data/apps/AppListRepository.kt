@@ -5,12 +5,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
-import android.content.pm.PackageManager
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.json.JSONArray
+import android.content.pm.PackageManager
 
 /**
  * Tracks every launchable app on the device and the user-pinned rail subset.
@@ -22,22 +20,25 @@ import org.json.JSONArray
  * - Order is taken from SettingsStore.appOrder, falling back to alphabetical
  *   (T1.28 AC4).
  *
- * Icons are NOT loaded synchronously — the adapter loads them lazily through
- * Glide using the custom ApplicationInfo model loader (T1.28 AC3).
+ * Rail (T1.30): pinned package names are persisted in
+ * [SettingsStore.pinnedApps]. `pin` enforces a hard cap of [MAX_RAIL] using
+ * FIFO eviction (oldest entry shifts out). `rail` resolves package names
+ * back to [AppEntry] using the latest scan, dropping entries whose package
+ * has been uninstalled.
  */
 class AppListRepository(
     private val ctx: Context,
     private val pm: PackageManager,
-    private val settings: SettingsStore? = null,
+    private val settings: SettingsStore,
 ) {
-    private val prefs: SharedPreferences =
-        ctx.getSharedPreferences("rail", Context.MODE_PRIVATE)
-
     private val _all = MutableStateFlow<List<AppEntry>>(emptyList())
     val all: StateFlow<List<AppEntry>> = _all
 
-    private val _rail = MutableStateFlow<List<ComponentName>>(loadRail())
-    val rail: StateFlow<List<ComponentName>> = _rail
+    private val _pinnedPackages = MutableStateFlow(settings.pinnedApps)
+    val pinnedPackages: StateFlow<List<String>> = _pinnedPackages
+
+    private val _rail = MutableStateFlow<List<AppEntry>>(resolveRail(_pinnedPackages.value, _all.value))
+    val rail: StateFlow<List<AppEntry>> = _rail
 
     private var receiver: BroadcastReceiver? = null
 
@@ -57,10 +58,11 @@ class AppListRepository(
             .distinctBy { it.componentName.flattenToShortString() }
             .toList()
         _all.value = applyUserOrder(raw)
+        _rail.value = resolveRail(_pinnedPackages.value, _all.value)
     }
 
     private fun applyUserOrder(entries: List<AppEntry>): List<AppEntry> {
-        val order = settings?.appOrder.orEmpty()
+        val order = settings.appOrder
         if (order.isEmpty()) return entries.sortedBy { it.label.lowercase() }
         val byKey = entries.associateBy { it.componentName.flattenToShortString() }
         val ordered = order.mapNotNull { byKey[it] }
@@ -94,45 +96,41 @@ class AppListRepository(
         receiver = null
     }
 
-    fun pin(component: ComponentName) {
-        val current = _rail.value.toMutableList()
-        if (current.any { it == component }) return
-        if (current.size >= MAX_RAIL) current.removeAt(current.lastIndex)
-        current.add(component)
-        saveRail(current)
+    fun pin(packageName: String) {
+        val current = _pinnedPackages.value
+        if (packageName in current) return
+        val next = if (current.size >= MAX_RAIL) {
+            current.drop(current.size - MAX_RAIL + 1) + packageName
+        } else {
+            current + packageName
+        }
+        savePinned(next)
     }
 
-    fun unpin(component: ComponentName) {
-        val current = _rail.value.filterNot { it == component }
-        saveRail(current)
+    fun unpin(packageName: String) {
+        val next = _pinnedPackages.value.filterNot { it == packageName }
+        if (next.size == _pinnedPackages.value.size) return
+        savePinned(next)
     }
 
-    fun isPinned(component: ComponentName): Boolean =
-        _rail.value.any { it == component }
+    fun isPinned(packageName: String): Boolean = packageName in _pinnedPackages.value
 
-    private fun saveRail(list: List<ComponentName>) {
-        val json = JSONArray().apply { list.forEach { put(it.flattenToShortString()) } }
-        prefs.edit().putString("pinned", json.toString()).apply()
-        _rail.value = list
+    private fun savePinned(packages: List<String>) {
+        settings.setPinnedApps(packages)
+        _pinnedPackages.value = packages
+        _rail.value = resolveRail(packages, _all.value)
     }
 
-    private fun loadRail(): List<ComponentName> {
-        val raw = prefs.getString("pinned", null) ?: return defaultRail()
-        return runCatching {
-            val arr = JSONArray(raw)
-            (0 until arr.length()).mapNotNull { i ->
-                ComponentName.unflattenFromString(arr.getString(i))
-            }
-        }.getOrElse { defaultRail() }
+    private fun resolveRail(packages: List<String>, all: List<AppEntry>): List<AppEntry> {
+        if (packages.isEmpty() || all.isEmpty()) return emptyList()
+        val byPkg = HashMap<String, AppEntry>(all.size)
+        for (e in all) byPkg.putIfAbsent(e.packageName, e)
+        return packages.mapNotNull { byPkg[it] }
     }
-
-    private fun defaultRail(): List<ComponentName> = emptyList()
-
-    fun resolveAppEntry(component: ComponentName): AppEntry? =
-        _all.value.firstOrNull { it.componentName == component }
 
     companion object {
-        const val MAX_RAIL = 6
+        /** Hard cap on rail entries (T1.30 AC1 / AC3). */
+        const val MAX_RAIL = SettingsStore.MAX_PINNED
         private val PACKAGE_ACTIONS = setOf(
             Intent.ACTION_PACKAGE_ADDED,
             Intent.ACTION_PACKAGE_REMOVED,

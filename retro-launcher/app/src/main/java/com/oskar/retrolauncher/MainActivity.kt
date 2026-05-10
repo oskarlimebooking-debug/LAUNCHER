@@ -8,23 +8,16 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.oskar.retrolauncher.data.apps.AppEntry
 import com.oskar.retrolauncher.data.prefs.SettingsStore
-import com.oskar.retrolauncher.ui.grid.RailAdapter
 import com.oskar.retrolauncher.ui.home.HomeFragment
 import com.oskar.retrolauncher.ui.status.StatusBarFragment
 import com.oskar.retrolauncher.ui.wizard.WizardActivity
 import com.oskar.retrolauncher.util.Permissions
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var root: ConstraintLayout
-    private lateinit var railList: RecyclerView
-    private lateinit var railAdapter: RailAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,11 +34,6 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
         root = findViewById(R.id.root)
-        railList = findViewById(R.id.rail_list)
-
-        railAdapter = RailAdapter(onClick = ::launchApp)
-        railList.layoutManager = LinearLayoutManager(this)
-        railList.adapter = railAdapter
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -61,13 +49,6 @@ class MainActivity : AppCompatActivity() {
             App.settings.changes(SettingsStore.KEY_PANEL_RATIO).collect {
                 applyPanelRatio(App.settings.panelRatioPercent)
             }
-        }
-
-        // Drive the rail from pinned + master list.
-        lifecycleScope.launch {
-            App.appList.rail.combine(App.appList.all) { pinned, all ->
-                pinned.mapNotNull { cn -> all.firstOrNull { it.componentName == cn } }
-            }.collect { railAdapter.submitList(it) }
         }
     }
 
@@ -96,13 +77,5 @@ class MainActivity : AppCompatActivity() {
         val set = ConstraintSet().apply { clone(root) }
         set.setGuidelinePercent(R.id.panel_split, percent)
         set.applyTo(root)
-    }
-
-    private fun launchApp(entry: AppEntry) {
-        val intent = Intent(Intent.ACTION_MAIN)
-            .addCategory(Intent.CATEGORY_LAUNCHER)
-            .setComponent(entry.componentName)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { startActivity(intent) }
     }
 }
