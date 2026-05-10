@@ -16,6 +16,8 @@ enum class TempUnit { CELSIUS, FAHRENHEIT }
 
 enum class SpeedUnit { METERS_PER_SECOND, KILOMETERS_PER_HOUR, MILES_PER_HOUR }
 
+enum class Theme { SYSTEM, LIGHT, DARK }
+
 /**
  * Typed wrapper around the app's default [SharedPreferences]. Per T1.31 every
  * surfaced property also exposes a `Flow<T>` so UI layers can react without
@@ -117,6 +119,36 @@ class SettingsStore(
         prefs.edit().putBoolean(KEY_FIRST_RUN_DONE, done).apply()
     }
 
+    // ───────── Theme / trip export / weather refresh (T1.32) ─────────
+
+    val theme: Theme
+        get() = when (prefs.getString(KEY_THEME, "system")) {
+            "light" -> Theme.LIGHT
+            "dark" -> Theme.DARK
+            else -> Theme.SYSTEM
+        }
+
+    fun setTheme(theme: Theme) {
+        val value = when (theme) {
+            Theme.LIGHT -> "light"
+            Theme.DARK -> "dark"
+            Theme.SYSTEM -> "system"
+        }
+        prefs.edit().putString(KEY_THEME, value).apply()
+    }
+
+    val gpxExport: Boolean get() = prefs.getBoolean(KEY_GPX_EXPORT, false)
+    fun setGpxExport(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_GPX_EXPORT, enabled).apply()
+    }
+
+    val weatherRefreshIntervalMin: Int
+        get() = prefs.getInt(KEY_WEATHER_REFRESH_MIN, 30).coerceAtLeast(5)
+
+    fun setWeatherRefreshIntervalMin(minutes: Int) {
+        prefs.edit().putInt(KEY_WEATHER_REFRESH_MIN, minutes.coerceAtLeast(5)).apply()
+    }
+
     // ───────── Per-property Flows (T1.31 AC3) ─────────
 
     val unitsFlow: Flow<Units> = flowOfKey(KEY_UNITS) { units }
@@ -133,6 +165,10 @@ class SettingsStore(
     val weatherLatFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LAT) { weatherLat }
     val weatherLonFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LON) { weatherLon }
     val firstRunDoneFlow: Flow<Boolean> = flowOfKey(KEY_FIRST_RUN_DONE) { firstRunDone }
+    val themeFlow: Flow<Theme> = flowOfKey(KEY_THEME) { theme }
+    val gpxExportFlow: Flow<Boolean> = flowOfKey(KEY_GPX_EXPORT) { gpxExport }
+    val weatherRefreshIntervalMinFlow: Flow<Int> =
+        flowOfKey(KEY_WEATHER_REFRESH_MIN) { weatherRefreshIntervalMin }
 
     // ───────── Listener flows (legacy, still used) ─────────
 
@@ -192,6 +228,9 @@ class SettingsStore(
         const val KEY_WEATHER_LAT = "weather_lat"
         const val KEY_WEATHER_LON = "weather_lon"
         const val KEY_FIRST_RUN_DONE = "first_run_done"
+        const val KEY_THEME = "theme"
+        const val KEY_GPX_EXPORT = "gpx_export"
+        const val KEY_WEATHER_REFRESH_MIN = "weather_refresh_min"
 
         /** Hard cap on rail entries (T1.30 AC1 / AC3). */
         const val MAX_PINNED = 8

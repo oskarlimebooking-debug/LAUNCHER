@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="@string/pref_units">
+    <PreferenceCategory android:title="@string/pref_general">
         <ListPreference
             android:key="units"
             android:title="@string/pref_units"
@@ -9,49 +10,80 @@
             android:entries="@array/units_entries"
             android:entryValues="@array/units_values"
             android:defaultValue="metric" />
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="@string/pref_layout">
         <SeekBarPreference
             android:key="panel_ratio"
             android:title="@string/pref_panel_ratio"
-            android:max="70"
-            android:min="30"
+            android:max="50"
             android:defaultValue="40"
-            app:showSeekBarValue="true"
-            xmlns:app="http://schemas.android.com/apk/res-auto" />
+            app:min="30"
+            app:showSeekBarValue="true" />
+        <ListPreference
+            android:key="theme"
+            android:title="@string/pref_theme"
+            android:entries="@array/theme_entries"
+            android:entryValues="@array/theme_values"
+            android:defaultValue="system" />
         <ListPreference
             android:key="grid_cols"
             android:title="@string/pref_grid_cols"
             android:entries="@array/grid_cols_entries"
             android:entryValues="@array/grid_cols_values"
             android:defaultValue="4" />
-        <ListPreference
-            android:key="grid_rows"
-            android:title="@string/pref_grid_rows"
-            android:entries="@array/grid_rows_entries"
-            android:entryValues="@array/grid_rows_values"
-            android:defaultValue="3" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_trip">
+        <SeekBarPreference
+            android:key="speed_threshold"
+            android:title="@string/pref_speed_threshold"
+            android:max="10"
+            android:defaultValue="3"
+            app:min="0"
+            app:showSeekBarValue="true" />
         <SwitchPreferenceCompat
             android:key="record_trips"
             android:title="@string/pref_record_trips"
             android:summary="@string/pref_record_trips_summary"
             android:defaultValue="true" />
-        <SeekBarPreference
-            android:key="speed_threshold"
-            android:title="@string/pref_speed_threshold"
-            android:max="10"
-            android:min="0"
-            android:defaultValue="3"
-            app:showSeekBarValue="true"
-            xmlns:app="http://schemas.android.com/apk/res-auto" />
         <SwitchPreferenceCompat
-            android:key="show_loc_status"
-            android:title="@string/pref_show_loc_on_status"
+            android:key="gpx_export"
+            android:title="@string/pref_gpx_export"
+            android:summary="@string/pref_gpx_export_summary"
             android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_apps">
+        <ListPreference
+            android:key="map_app"
+            android:title="@string/pref_default_map" />
+        <ListPreference
+            android:key="voice_app"
+            android:title="@string/pref_default_voice" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_weather">
+        <EditTextPreference
+            android:key="weather_lat_input"
+            android:title="@string/pref_weather_lat"
+            android:summary="@string/pref_weather_location_summary"
+            android:inputType="numberSigned|numberDecimal" />
+        <EditTextPreference
+            android:key="weather_lon_input"
+            android:title="@string/pref_weather_lon"
+            android:summary="@string/pref_weather_location_summary"
+            android:inputType="numberSigned|numberDecimal" />
+        <ListPreference
+            android:key="units"
+            android:title="@string/pref_units"
+            android:entries="@array/units_entries"
+            android:entryValues="@array/units_values"
+            android:defaultValue="metric" />
+        <SeekBarPreference
+            android:key="weather_refresh_min"
+            android:title="@string/pref_weather_refresh"
+            android:max="120"
+            android:defaultValue="30"
+            app:min="5"
+            app:showSeekBarValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_advanced">
@@ -59,5 +91,20 @@
             android:key="notification_access"
             android:title="@string/pref_notification_access"
             android:summary="@string/pref_notification_access_summary" />
+        <SwitchPreferenceCompat
+            android:key="show_loc_status"
+            android:title="@string/pref_show_loc_on_status"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_about">
+        <Preference
+            android:key="version"
+            android:title="@string/pref_version"
+            android:selectable="false" />
+        <Preference
+            android:key="oss_licenses"
+            android:title="@string/pref_oss_licenses"
+            android:summary="@string/pref_oss_licenses_summary" />
     </PreferenceCategory>
 </PreferenceScreen>

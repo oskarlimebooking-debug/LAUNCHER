@@ -90,6 +90,13 @@
             android:screenOrientation="landscape"
             android:theme="@style/Theme.RetroLauncher" />
 
+        <activity
+            android:name=".ui.settings.LicensesActivity"
+            android:exported="false"
+            android:label="@string/licenses_title"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.RetroLauncher" />
+
         <!-- Notification listener for media -->
         <service
             android:name=".service.MediaNotificationListener"

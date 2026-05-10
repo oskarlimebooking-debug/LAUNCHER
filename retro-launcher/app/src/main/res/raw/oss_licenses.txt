@@ -1,0 +1,141 @@
+Open-source software bundled with Retro Launcher
+================================================
+
+This launcher would not be possible without the following projects.
+Each is shipped under its own license; the full text follows the project list.
+
+
+PROJECTS
+--------
+
+- Kotlin Standard Library — JetBrains s.r.o.
+  https://kotlinlang.org/  (Apache License 2.0)
+
+- Kotlin Coroutines — JetBrains s.r.o.
+  https://github.com/Kotlin/kotlinx.coroutines  (Apache License 2.0)
+
+- AndroidX Core, AppCompat, ConstraintLayout, RecyclerView, ViewPager2,
+  Fragment, Lifecycle, Room, WorkManager, Palette, Preference
+  — The Android Open Source Project.
+  https://developer.android.com/jetpack/androidx  (Apache License 2.0)
+
+- Material Components for Android — Google LLC.
+  https://github.com/material-components/material-components-android
+  (Apache License 2.0)
+
+- OkHttp — Square, Inc.
+  https://square.github.io/okhttp/  (Apache License 2.0)
+
+- Moshi — Square, Inc.
+  https://github.com/square/moshi  (Apache License 2.0)
+
+- Glide — Bump Technologies, Inc.
+  https://github.com/bumptech/glide
+  (BSD, part MIT, and Apache 2.0)
+
+- Timber — Jake Wharton.
+  https://github.com/JakeWharton/timber  (Apache License 2.0)
+
+
+APACHE LICENSE 2.0
+------------------
+
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the conditions stated in the license, including retaining
+      attribution notices, providing a copy of this License, and
+      indicating any modifications made.
+
+   4. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+
+   5. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor.
+
+   6. Disclaimer of Warranty. Unless required by applicable law or agreed
+      to in writing, Licensor provides the Work on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE.
+
+   7. Limitation of Liability. In no event and under no legal theory,
+      whether in tort, contract, or otherwise, shall any Contributor be
+      liable for damages, including any direct, indirect, special,
+      incidental, or consequential damages arising as a result of this
+      License or out of the use or inability to use the Work.
+
+   8. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer, and
+      charge a fee for, acceptance of support, warranty, indemnity, or
+      other liability obligations and/or rights consistent with this
+      License.
+
+   END OF TERMS AND CONDITIONS
+
+   Full text: http://www.apache.org/licenses/LICENSE-2.0
+
+
+BSD 2-CLAUSE LICENSE (Glide, in part)
+-------------------------------------
+
+Copyright 2014 Google, Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY GOOGLE, INC. ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES ARE DISCLAIMED. IN NO EVENT SHALL GOOGLE, INC. BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

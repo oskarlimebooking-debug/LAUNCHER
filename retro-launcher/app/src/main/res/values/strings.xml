@@ -54,21 +54,40 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="pref_general">General</string>
     <string name="pref_units">Units</string>
     <string name="pref_units_summary">Speed and temperature display</string>
     <string name="pref_layout">Layout</string>
-    <string name="pref_panel_ratio">Left / Right panel split</string>
+    <string name="pref_panel_ratio">Right panel width (%)</string>
     <string name="pref_grid_cols">App grid columns</string>
     <string name="pref_grid_rows">App grid rows</string>
+    <string name="pref_theme">Theme</string>
     <string name="pref_trip">Trip recording</string>
     <string name="pref_record_trips">Record trip history</string>
     <string name="pref_record_trips_summary">Saves trips with distance, speed &amp; location</string>
-    <string name="pref_speed_threshold">Ignore speeds below (km/h)</string>
+    <string name="pref_speed_threshold">Start trip above (km/h)</string>
+    <string name="pref_gpx_export">Export trips as GPX</string>
+    <string name="pref_gpx_export_summary">Write a .gpx file when a trip ends</string>
+    <string name="pref_apps">Apps</string>
+    <string name="pref_default_map">Default map</string>
+    <string name="pref_default_voice">Default voice assistant</string>
+    <string name="pref_apps_ask_every_time">Ask every time</string>
+    <string name="pref_weather">Weather</string>
+    <string name="pref_weather_location">Location override</string>
+    <string name="pref_weather_location_summary">Leave blank to use device GPS</string>
+    <string name="pref_weather_lat">Latitude</string>
+    <string name="pref_weather_lon">Longitude</string>
+    <string name="pref_weather_refresh">Refresh interval (min)</string>
     <string name="pref_advanced">Advanced</string>
     <string name="pref_notification_access">Notification access</string>
     <string name="pref_notification_access_summary">Re-link to system notification settings</string>
     <string name="pref_show_loc_on_status">Show location on status bar</string>
     <string name="pref_debug_logs">Debug logs</string>
+    <string name="pref_about">About</string>
+    <string name="pref_version">Version</string>
+    <string name="pref_oss_licenses">Open-source licenses</string>
+    <string name="pref_oss_licenses_summary">Bundled third-party software</string>
+    <string name="licenses_title">Open-source licenses</string>
 
     <string-array name="units_entries">
         <item>Metric (°C / km/h)</item>
@@ -103,5 +122,16 @@
         <item>3</item>
         <item>4</item>
         <item>5</item>
+    </string-array>
+
+    <string-array name="theme_entries">
+        <item>Follow system</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="theme_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
     </string-array>
 </resources>
