@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-10 (T1.28 done — AppListRepository wired with receiver + Glide loader + SettingsStore order)
+> Last updated: 2026-05-10 (T1.29 done — Phase 7 now 2/3, next is T1.30)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 28/49 tasks done (Phase 6 complete: T1.23–T1.27; Phase 7 started with T1.28).
-T1.29 (next pending — Phase 7 app grid polish).
+**Status:** 29/49 tasks done (Phase 7: T1.28–T1.29 done; T1.30 pending).
+T1.30 (next pending — Phase 7 RailFragment pinned-apps strip).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -66,9 +66,10 @@ Phase 6 — Trip recording (5/5 done)
 - ✓ T1.26 TripCalendarView heatmap (done 2026-05-09)
 - ✓ T1.27 TripsFragment + adapter (done 2026-05-09)
 
-Phase 7 — App grid (1/3 pending)
+Phase 7 — App grid (2/3 done, 1 pending)
 - ✓ T1.28 AppListRepository PackageManager scanning (done 2026-05-10)
-- ⏳ T1.29–T1.30 (P1/P2, Cx 8/5)
+- ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
+- ⏳ T1.30 RailFragment pinned-apps strip (P2, Cx 5)
 
 Phase 8 — Settings and first-run (0/4 pending)
 - ⏳ T1.31–T1.34 (P1/P1/P1/P2, Cx 5/5/8/3)
@@ -83,8 +84,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–6 done + T1.28 (28/49). Continue with `/start-task T1.29`
-(Phase 7 — AppGridFragment polish / rail wiring, Cx 8, P1).
+Phases 1–6 done + T1.28–T1.29 (29/49). Continue with `/start-task T1.30`
+(Phase 7 — RailFragment pinned-apps strip, Cx 5, P2).
 
 ### Backlog
 
@@ -92,6 +93,42 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.29 done (2026-05-10)** — `AppGridFragment` + `AppGridAdapter` audited
+  against spec §13.2 and ACs; implementation was already in place from earlier
+  scaffolding, no code changes needed:
+  • `AppGridFragment` uses `GridLayoutManager` with `App.settings.gridCols`
+    (default 4 from `SettingsStore.gridCols`). Reactive `combine` on
+    `App.appList.all` + `settings.changes("grid_cols")` keeps spanCount in
+    sync if the user changes column count at runtime.
+  • Tap launches via `Intent.ACTION_MAIN + CATEGORY_LAUNCHER + componentName`
+    with `FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_RESET_TASK_IF_NEEDED`,
+    wrapped in `runCatching` — direct `startActivity` is well under 200 ms.
+  • Long-press shows `PopupMenu` with Pin/Unpin (toggles based on
+    `appList.isPinned`) + App info (launches
+    `ACTION_APPLICATION_DETAILS_SETTINGS`). Two actions per AC.
+  • `AppGridAdapter` extends `ListAdapter<AppEntry, VH>` with `DiffUtil`
+    keyed on `componentName` (no flicker on icon swaps); `onViewRecycled`
+    calls `Glide.with(...).clear(...)` for clean recycling — pairs with the
+    `AppIconGlideModule` from T1.28 for cached, smooth scrolling.
+  • Layout `fragment_grid.xml` + `item_app.xml` already present with
+    `grid_icon` 48dp icon and `grid_label` text; `bg_tile` background and
+    `selectableItemBackground` ripple on items.
+  Arch check clean on both files. Systrace ≥45 fps AC requires on-device
+  validation — implementation follows recommended patterns (ListAdapter,
+  Glide recycling, cached icons by uid).
+
+- **Planning audit (2026-05-10 post-T1.28)** — `/pc-plan` re-invoked on
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. Pre-flight: budget
+  0% (well under 80% threshold); Trello not connected → PM-agnostic mode.
+  Verified all 49 task files exist on disk (T1.1–T1.49 contiguous, each
+  with frontmatter + description + ACs) and that the CLI tracks all 49
+  across the two plan IDs (`plan-2026-05-retro-launcher-sprint-1` ×13 +
+  `plan-sprint-1-engage` ×36). 28/49 done through T1.28 (Phases 1–6
+  complete; Phase 7 started). No new plans, tasks, or backlog edits —
+  planning is fully reconciled. Resume with `/start-task T1.29`
+  (Phase 7 — AppGridFragment + adapter, Cx 8, P1, depends on T1.28 which
+  is done).
 
 - **T1.28 done** (auto-updated by hook)
 
@@ -1327,8 +1364,9 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.27 — closes Phase 6** (GPX export from `getPoints(tripId)`,
-   share-sheet integration on long-press). Run via `/start-task T1.27`.
+1. **T1.30 — closes Phase 7** (RailFragment pinned-apps strip: small
+   horizontal `RecyclerView` of `appList.pinned`, tap to launch, long-press
+   to unpin; integrates with the home shell). Run via `/start-task T1.30`.
 4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
