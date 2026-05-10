@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.32 done — SettingsFragment per spec §14.3)
+> Last updated: 2026-05-11 (T1.33 done — first-run permission wizard, 6 steps)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 32/49 tasks done (Phase 8 in progress: T1.31–T1.32 done).
-T1.33 (next pending — Phase 8, first-run wizard, Cx 8, P1).
+**Status:** 33/49 tasks done (Phase 8 in progress: T1.31–T1.33 done).
+T1.34 (next pending — Phase 8, BootReceiver wake-on-boot, Cx 3, P2).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -71,10 +71,11 @@ Phase 7 — App grid (3/3 done)
 - ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
 - ✓ T1.30 RailFragment pinned-apps strip (done 2026-05-10)
 
-Phase 8 — Settings and first-run (2/4 done)
+Phase 8 — Settings and first-run (3/4 done)
 - ✓ T1.31 SettingsStore SharedPreferences wrapper (done 2026-05-11)
 - ✓ T1.32 SettingsFragment PreferenceFragment (done 2026-05-11)
-- ⏳ T1.33–T1.34 (P1/P2, Cx 8/3)
+- ✓ T1.33 First-run permission wizard (done 2026-05-11)
+- ⏳ T1.34 (P2, Cx 3)
 
 Phase 9 — Testing and build (0/4 pending)
 - ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
@@ -86,8 +87,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–7 done + T1.31–T1.32 (32/49). Continue with `/start-task T1.33`
-(Phase 8 — first-run wizard, Cx 8, P1).
+Phases 1–7 done + T1.31–T1.33 (33/49). Continue with `/start-task T1.34`
+(Phase 8 — BootReceiver wake-on-boot, Cx 3, P2).
 
 ### Backlog
 
@@ -96,7 +97,43 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
-- **T1.32 done** (auto-updated by hook)
+- **T1.33 done (2026-05-11)** — First-run permission wizard rewritten to the
+  6-step linear flow named by the task spec:
+  1. Welcome (Continue) — no permission action, intro screen.
+  2. Location — requests `ACCESS_FINE_LOCATION` via
+     `ActivityCompat.requestPermissions`, auto-advances on grant via
+     `onRequestPermissionsResult` or `onResume` re-check.
+  3. Notification listener — Grant deep-links to
+     `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS`; `onResume` auto-advances
+     when `MediaNotificationListener.isEnabled(ctx)` flips true.
+  4. Default launcher — Grant deep-links to
+     `Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS` (API 24+) with
+     `ACTION_HOME_SETTINGS` fallback; `Permissions.isDefaultLauncher(ctx)`
+     resolves the home Intent and matches against our packageName.
+  5. OWM API key — single EditText + Continue runs
+     `WeatherRepository.validateApiKey(key)` in `lifecycleScope`; on HTTP 200
+     the key is persisted via `SettingsStore.setOwmApiKey(key)`, on 401/other
+     a warning is shown and Continue re-enables. Skip leaves it unset.
+  6. Home location — two EditTexts (lat/lon); Continue saves via
+     `setWeatherLocation(lat, lon)`, blank/invalid clears both so the
+     weather card falls back to device GPS.
+  • `setFirstRunDone(true)` fires only inside `finishWizard()` — completion
+     is the single source of truth, satisfying "wizard shows on first launch
+     and never again unless user clears app data".
+  • MainActivity.onStart now gates the wizard on `App.settings.firstRunDone`
+     (was `Permissions.isFirstRunComplete` which would re-route after each
+     boot whenever a permission was rescinded — wrong gate per AC).
+  • SettingsStore gains `owmApiKey: String?` + `owmApiKeyFlow` (Moshi-free,
+     blank → null normalization in getter); ServiceLocator now constructs
+     `WeatherRepository` with the user key, falling back to BuildConfig.
+  • activity_wizard.xml redesigned as a single ConstraintLayout with
+     persistent input fields toggled by `WizardActivity.render()`. Total
+     vertical content ≈ 280dp inside a 1024×600 viewport (536dp working
+     area after 32dp padding) — no scrolling needed.
+  • Coverage: SettingsStoreT133Test (4) · WeatherRepositoryValidateKeyTest
+     (4, MockWebServer) · PermissionsT133Test (1) · WizardActivityTest (5,
+     Robolectric drives the Activity through every step). All green.
+     `bpsai-pair arch check` clean on all 6 modified production files.
 
 - **T1.32 done (2026-05-11)** — `SettingsFragment` rewritten as a full
   `PreferenceFragmentCompat` per spec §14.3 + task ACs:
