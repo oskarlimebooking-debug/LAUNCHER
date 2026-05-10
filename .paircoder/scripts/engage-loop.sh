@@ -39,7 +39,7 @@ while (( iter < MAX_ITER )); do
   head_before=$(git rev-parse HEAD)
   out=$(mktemp)
   trap 'rm -f "$out"' EXIT
-  if ! bpsai-pair engage "$BACKLOG" --resume --hooks-advisory 2>&1 | tee "$out"; then
+  if ! bpsai-pair engage "$BACKLOG" --resume --hooks-advisory --skip-planning 2>&1 | tee "$out"; then
     echo "✗ engage exited non-zero on iteration $iter"
     exit 1
   fi

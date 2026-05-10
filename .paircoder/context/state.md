@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.31 done — SettingsStore reactive flows + new fields)
+> Last updated: 2026-05-11 (T1.32 done — SettingsFragment per spec §14.3)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 31/49 tasks done (Phase 8 in progress: T1.31 done).
-T1.32 (next pending — Phase 8, SettingsActivity scaffold).
+**Status:** 32/49 tasks done (Phase 8 in progress: T1.31–T1.32 done).
+T1.33 (next pending — Phase 8, first-run wizard, Cx 8, P1).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -71,9 +71,10 @@ Phase 7 — App grid (3/3 done)
 - ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
 - ✓ T1.30 RailFragment pinned-apps strip (done 2026-05-10)
 
-Phase 8 — Settings and first-run (1/4 done)
+Phase 8 — Settings and first-run (2/4 done)
 - ✓ T1.31 SettingsStore SharedPreferences wrapper (done 2026-05-11)
-- ⏳ T1.32–T1.34 (P1/P1/P2, Cx 5/8/3)
+- ✓ T1.32 SettingsFragment PreferenceFragment (done 2026-05-11)
+- ⏳ T1.33–T1.34 (P1/P2, Cx 8/3)
 
 Phase 9 — Testing and build (0/4 pending)
 - ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
@@ -85,8 +86,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–7 done + T1.31 (31/49). Continue with `/start-task T1.32`
-(Phase 8 — SettingsActivity scaffold, Cx 5, P1).
+Phases 1–7 done + T1.31–T1.32 (32/49). Continue with `/start-task T1.33`
+(Phase 8 — first-run wizard, Cx 8, P1).
 
 ### Backlog
 
@@ -94,6 +95,51 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.32 done** (auto-updated by hook)
+
+- **T1.32 done (2026-05-11)** — `SettingsFragment` rewritten as a full
+  `PreferenceFragmentCompat` per spec §14.3 + task ACs:
+  • Categories: General (units, panel ratio 30–50, theme, grid columns),
+    Trip (start threshold, record toggle, GPX export), Apps (default map,
+    default voice), Weather (lat/lon override, units, refresh interval),
+    Advanced (notification access, location on status bar), About (version,
+    OSS licenses). All keys match `SettingsStore` so every UI mutation
+    persists immediately through the default SharedPreferences (AC1).
+  • `panel_ratio` SeekBarPreference uses `app:min="30"` + `android:max="50"`
+    (AC2). The original `android:min` was silently parsing as 0 on AndroidX
+    Preference 1.2 — switched all three SeekBarPreferences to `app:min`.
+  • New `IntentPickerEntries` helper resolves `geo:0,0` and
+    `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` via
+    `PackageManager.queryIntentActivities` → label/package pairs, prefixed
+    with a leading "Ask every time" empty-value entry. Populated into
+    `map_app` / `voice_app` ListPreferences in `onCreatePreferences` (AC3).
+  • `LicensesActivity` (registered in manifest) renders
+    `res/raw/oss_licenses.txt` — bundled Apache 2.0 + BSD 2-clause text
+    listing Kotlin, Coroutines, AndroidX, Material, OkHttp, Moshi, Glide,
+    Timber. Launched from the About category's `oss_licenses` Preference
+    (AC4).
+  • Drawer-launches-Settings was already wired in `StatusBarFragment`
+    (T1.9 work) — no change needed (AC5).
+  • Weather lat/lon: distinct EditText input keys
+    (`weather_lat_input`/`weather_lon_input`) seed-and-bridge to
+    `SettingsStore.setWeatherLocation(Float?, Float?)`. Keeps the canonical
+    Float-typed pref correctly typed while reusing the standard
+    EditTextPreference UI.
+  • New `SettingsStore` fields with reactive `Flow<T>`: `theme` (Theme
+    enum: SYSTEM/LIGHT/DARK), `gpxExport` Boolean, `weatherRefreshIntervalMin`
+    Int (default 30, floor 5).
+  • Tests: `SettingsStoreT132Test` (9 cases — defaults, roundtrip,
+    Flow first-emit for each new field), `IntentPickerEntriesTest` (intent
+    shapes, empty-resolver path, array-prefix shaping),
+    `SettingsFragmentTest` (7 cases — all spec'd preference keys, panel
+    bounds 30–50, pickers populated, OSS click launches LicensesActivity,
+    lat-bridge writes Float to SettingsStore, version pref shows
+    BuildConfig.VERSION_NAME).
+  • Full `:app:testStandardDebugUnitTest` green;
+    `:app:assembleStandardDebug` succeeds; arch check clean on all four
+    touched source files (SettingsStore 238 lines, SettingsFragment 86,
+    IntentPickerEntries 60, LicensesActivity 22 — all well under limits).
 
 - **T1.31 done** (auto-updated by hook)
 
