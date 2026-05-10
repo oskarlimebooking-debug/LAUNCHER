@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-05-10 (T1.30 done — Phase 7 complete (3/3); next is T1.31)
+> Last updated: 2026-05-10 (T1.30 done — Phase 7 complete; next is T1.31, Phase 8)
 
 ## Active Plan
 
