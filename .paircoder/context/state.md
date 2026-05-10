@@ -97,6 +97,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.34 done** (auto-updated by hook)
+
 - **T1.34 done (2026-05-11)** — BootReceiver gated on `firstRunDone`. The
   receiver itself was already implemented in T1.21 (boots → start
   LocationService + reschedule WeatherWorker via `KEEP` policy). T1.34 adds

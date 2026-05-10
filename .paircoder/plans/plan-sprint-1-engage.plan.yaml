@@ -71,6 +71,6 @@ phases:
   - T1.47
   - T1.48
   - T1.49
-status: in_progress
+status: planned
 title: Sprint 1
 type: feature

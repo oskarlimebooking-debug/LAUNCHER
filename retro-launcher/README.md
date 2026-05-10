@@ -68,6 +68,27 @@ app/
 
 ## Install on the head unit
 
+### One-shot script (recommended)
+
+`scripts/install-hu.sh` builds the APK if missing, installs over ADB, and sets retro-launcher as the default home activity (root over adb required for the last step).
+
+```
+./scripts/install-hu.sh             # standard flavor (any user, no embedding)
+./scripts/install-hu.sh --system    # system flavor (platform-signed, embedding on)
+```
+
+The script reports a clear message for the two most common failures: `adb` missing from PATH, and `device unauthorized` (head unit needs USB debugging enabled and the RSA fingerprint accepted).
+
+### Enabling USB debugging on the head unit
+
+1. **Settings → About head unit** — tap the build number 7 times to unlock developer options.
+2. **Settings → Developer options** — toggle **USB debugging** on.
+3. Plug the USB cable from the host into the head unit's debug port (often labeled USB-A on the back; consult your HU manual).
+4. On the host, run `adb devices`. The head unit prompts "Allow USB debugging?" — tick "Always allow from this computer" and accept.
+5. For Wi-Fi: `adb tcpip 5555` (over USB once), then `adb connect <head-unit-ip>:5555`.
+
+### Manual install (without the script)
+
 ```
 # debug build, easy iteration
 adb install app/build/outputs/apk/standard/debug/app-standard-debug.apk
@@ -76,7 +97,7 @@ adb install app/build/outputs/apk/standard/debug/app-standard-debug.apk
 ./gradlew :app:assembleStandardRelease
 adb install app/build/outputs/apk/standard/release/app-standard-release.apk
 
-# set as default launcher
+# set as default launcher (requires root over adb)
 adb shell cmd package set-home-activity com.oskar.retrolauncher/.MainActivity
 ```
 
