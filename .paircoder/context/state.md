@@ -95,6 +95,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.31 done** (auto-updated by hook)
+
 - **T1.31 done (2026-05-11)** — `SettingsStore` extended per spec §14.2 +
   task ACs:
   • New typed properties: `panelRatio: Float` (0.3-0.7 derived from existing
