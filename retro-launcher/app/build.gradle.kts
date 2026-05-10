@@ -2,6 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.kapt)
+    jacoco
+}
+
+jacoco {
+    toolVersion = "0.8.11"
 }
 
 android {
@@ -68,6 +73,7 @@ android {
         debug {
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
+            enableUnitTestCoverage = true
         }
         release {
             isMinifyEnabled = true
@@ -93,6 +99,16 @@ android {
     testOptions {
         // Required for Robolectric to inflate layouts/themes via the merged resource set.
         unitTests.isIncludeAndroidResources = true
+    }
+}
+
+// Robolectric + Jacoco compatibility: include classes that lack source location
+// (Robolectric's SandboxClassLoader synthesizes some at runtime) and skip
+// internal JDK packages that the agent cannot instrument on Java 11+.
+tasks.withType<Test>().configureEach {
+    extensions.configure(JacocoTaskExtension::class) {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
 
@@ -130,7 +146,123 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.work.testing)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotest.property)
+    testImplementation(libs.androidx.room.testing)
 
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)
+}
+
+// T1.35: jacoco coverage for unit tests.
+// Scope = StandardDebug variant (the one shipped in v0.1). Reports the line/branch
+// coverage of the production sources covered by `:app:testStandardDebugUnitTest`.
+tasks.register<JacocoReport>("jacocoTestReport") {
+    group = "verification"
+    description = "Coverage for :app:testStandardDebugUnitTest (line/branch)."
+    dependsOn("testStandardDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    // T1.35 scope: repos + recorders + util extensions. Anything outside the AC
+    // list (UI surfaces, system services, PackageManager-backed AppList, the
+    // ~600 LoC SettingsStore wrapper) is exercised via instrumentation / QC and
+    // is not counted here.
+    val excludes = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "**/*\$*\$*.class",
+        "**/databinding/**/*.*",
+        "**/android/databinding/**/*.*",
+        "**/androidx/databinding/**/*.*",
+        "**/*Binding.*",
+        "**/*_Impl*.*",
+        "**/Glide*.*",
+        "**/*GlideModule*.*",
+        // Out-of-scope production code (covered by instrumentation/QC, not unit tests).
+        "**/ui/**",
+        "**/MainActivity.*",
+        "**/App.*",
+        "**/ServiceLocator.*",
+        "**/service/**",
+        "**/data/apps/**",
+        "**/data/prefs/**",
+        "**/util/Permissions*",
+        "**/util/UnitsFormatExt*",
+        // Generated Moshi adapters.
+        "**/*JsonAdapter.*",
+    )
+
+    val javaClasses = fileTree("${layout.buildDirectory.get()}/intermediates/javac/standardDebug/classes") {
+        exclude(excludes)
+    }
+    val kotlinClasses = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/standardDebug") {
+        exclude(excludes)
+    }
+    classDirectories.setFrom(files(javaClasses, kotlinClasses))
+
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.get()) {
+            include("jacoco/testStandardDebugUnitTest.exec", "outputs/unit_test_code_coverage/**/*.exec")
+        },
+    )
+}
+
+// 80 % minimum line coverage on the same scope. Fails the build below the floor.
+tasks.register<JacocoCoverageVerification>("jacocoCoverageVerification") {
+    group = "verification"
+    description = "Fails build when line coverage drops below 80 % on StandardDebug."
+    dependsOn("jacocoTestReport")
+
+    val excludes = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "**/*\$*\$*.class",
+        "**/databinding/**/*.*",
+        "**/*Binding.*",
+        "**/*_Impl*.*",
+        "**/Glide*.*",
+        "**/*GlideModule*.*",
+        "**/ui/**",
+        "**/MainActivity.*",
+        "**/App.*",
+        "**/ServiceLocator.*",
+        "**/service/**",
+        "**/*JsonAdapter.*",
+    )
+
+    val javaClasses = fileTree("${layout.buildDirectory.get()}/intermediates/javac/standardDebug/classes") {
+        exclude(excludes)
+    }
+    val kotlinClasses = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/standardDebug") {
+        exclude(excludes)
+    }
+    classDirectories.setFrom(files(javaClasses, kotlinClasses))
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.get()) {
+            include("jacoco/testStandardDebugUnitTest.exec", "outputs/unit_test_code_coverage/**/*.exec")
+        },
+    )
+
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
 }

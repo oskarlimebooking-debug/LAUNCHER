@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.34 done — BootReceiver gated on firstRunDone)
+> Last updated: 2026-05-11 (T1.35 done — unit-test suite, 88% line coverage, jacoco wired)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 34/49 tasks done (Phase 8 complete: T1.31–T1.34 done).
-T1.35 (next pending — Phase 9, testing/build, P1).
+**Status:** 35/49 tasks done (Phase 9 in progress: T1.35 done).
+T1.36 (next pending — Phase 9, testing/build, P2).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -77,8 +77,9 @@ Phase 8 — Settings and first-run (4/4 done)
 - ✓ T1.33 First-run permission wizard (done 2026-05-11)
 - ✓ T1.34 BootReceiver gated on firstRunDone (done 2026-05-11)
 
-Phase 9 — Testing and build (0/4 pending)
-- ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
+Phase 9 — Testing and build (1/4 done)
+- ✓ T1.35 Unit tests for repos and recorders (done 2026-05-11)
+- ⏳ T1.36–T1.38 (P2/P2/P2, Cx 8/3/5)
 
 Phase 10 — v0.2 polish (0/5 pending)
 - ⏳ T1.39–T1.43 (all P2, Cx 13/5/8/5/5)
@@ -87,8 +88,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–8 done (34/49). Continue with `/start-task T1.35`
-(Phase 9 — testing/build, P1).
+Phases 1–8 done + T1.35 (35/49). Continue with `/start-task T1.36`
+(Phase 9 — testing/build, P2).
 
 ### Backlog
 
@@ -96,6 +97,38 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.35 done (2026-05-11)** — Unit-test coverage for repos + recorders.
+  Sprint-1 already had a deep test suite (320+ JUnit/Robolectric cases) but no
+  measurement; this task adds the AC scaffolding and fills the named gaps:
+  1. New `LocationRepositoryTest` (8 cases via Turbine + Robolectric) — was
+     the only AC-listed module without a dedicated unit suite.
+  2. New `ColorExtTest` (6 cases) covering `Int.darkened` invariants
+     (monotonicity, clamp-to-zero, identity at factor 0) and
+     `Bitmap.dominantColorAsync` swatch/fallback paths under Robolectric.
+  3. New `TripRecorderPropertyTest` (kotest-property) — 30 randomized
+     scenarios assert (a) every state transition matches the spec graph and
+     (b) every persisted trip satisfies distance/duration/avg≤max invariants.
+  4. Added `jacoco` plugin + `:app:jacocoTestReport` + `:app:jacocoCoverageVerification`
+     tasks in `app/build.gradle.kts`, scoped via class-path excludes to the
+     AC files (`MediaRepository`, `WeatherRepository`, `LocationRepository`,
+     `TripRepository`, `TripRecorder`, `SpeedFilter`, util extensions). UI,
+     services, `SettingsStore`, `AppListRepository` are out of scope here —
+     they need instrumentation/QC. 80% line floor enforced by
+     `jacocoCoverageVerification`.
+  5. `JacocoTaskExtension.isIncludeNoLocationClasses = true` + `excludes
+     "jdk.internal.*"` fixes the Robolectric SandboxClassLoader vs. jacoco
+     agent interaction — without it Robolectric tests showed 0% on every
+     class they exercised.
+  6. New test deps in `libs.versions.toml`: MockK 1.13.10, Turbine 1.0.0,
+     kotest-property 5.8.1, room-testing 2.6.1.
+  Result: 332 tests, 22.9 s wall-clock (well under the 60 s AC), 0 failures
+  across 5 consecutive runs. Coverage: 88.1% LINE / 84.1% INSTRUCTION
+  (overall scoped to AC files) — TripRecorder 97.8%, SpeedFilter 100%,
+  WeatherRepository 93.5%, LocationRepository 100%, ColorExtKt 100%,
+  TripRepository 71% (only delete-by-id-cascade lambda missing). XML report
+  at `app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml`.
+  `bpsai-pair arch check` clean on all new files + build.gradle.kts.
 
 - **T1.34 done** (auto-updated by hook)
 
