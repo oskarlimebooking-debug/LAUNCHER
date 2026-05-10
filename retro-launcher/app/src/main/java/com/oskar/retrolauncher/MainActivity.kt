@@ -12,7 +12,6 @@ import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.ui.home.HomeFragment
 import com.oskar.retrolauncher.ui.status.StatusBarFragment
 import com.oskar.retrolauncher.ui.wizard.WizardActivity
-import com.oskar.retrolauncher.util.Permissions
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -54,8 +53,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        // Route to wizard if essential permissions are missing on first boot.
-        if (!Permissions.isFirstRunComplete(this)) {
+        // T1.33 — gate on the persisted wizard-complete flag rather than live
+        // permission state, so skipping a step doesn't re-trigger the wizard.
+        if (!App.settings.firstRunDone) {
             startActivity(Intent(this, WizardActivity::class.java))
         }
     }

@@ -68,7 +68,12 @@ class ServiceLocator(private val app: Application) {
 
     val media: MediaRepository by lazy { MediaRepository() }
 
-    val weather: WeatherRepository by lazy { WeatherRepository(app, http, moshi) }
+    val weather: WeatherRepository by lazy {
+        // T1.33 — prefer the user-entered key from the first-run wizard,
+        // fall back to BuildConfig (typically empty in CI / unsigned builds).
+        val key = settings.owmApiKey ?: BuildConfig.OWM_API_KEY
+        WeatherRepository(app, http, moshi, apiKey = key)
+    }
 
     val location: LocationRepository by lazy { LocationRepository() }
 

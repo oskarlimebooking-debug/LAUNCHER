@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    T1.33 — first-run wizard. Single-screen, no scrolling, fits 1024×600.
+    The three input fields (input_text / input_lat / input_lon) live in the
+    layout permanently and are toggled by WizardActivity per-step.
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -13,6 +18,7 @@
         android:layout_height="wrap_content"
         android:textColor="@color/text_tertiary"
         android:textSize="12sp"
+        android:letterSpacing="0.08"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -22,7 +28,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         android:textColor="@color/text_primary"
-        android:textSize="32sp"
+        android:textSize="30sp"
         android:fontFamily="sans-serif-light"
         app:layout_constraintTop_toBottomOf="@id/step_index"
         app:layout_constraintStart_toStartOf="parent"
@@ -32,12 +38,92 @@
         android:id="@+id/body"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:textColor="@color/text_secondary"
-        android:textSize="16sp"
+        android:textSize="15sp"
         app:layout_constraintTop_toBottomOf="@id/title"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!--
+        Input area: shared across input steps. WizardActivity flips the
+        relevant fields' visibility per-step. Single-line, fixed widths so
+        the 1024×600 budget is preserved.
+    -->
+    <EditText
+        android:id="@+id/input_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:inputType="text"
+        android:maxLines="1"
+        android:visibility="gone"
+        android:hint="@string/wizard_owm_hint"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/body"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <EditText
+        android:id="@+id/input_lat"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:inputType="numberSigned|numberDecimal"
+        android:maxLines="1"
+        android:visibility="gone"
+        android:hint="@string/wizard_home_lat_hint"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/body"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/input_lon"
+        app:layout_constraintHorizontal_weight="1" />
+
+    <EditText
+        android:id="@+id/input_lon"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="8dp"
+        android:inputType="numberSigned|numberDecimal"
+        android:maxLines="1"
+        android:visibility="gone"
+        android:hint="@string/wizard_home_lon_hint"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_tertiary"
+        android:textSize="16sp"
+        app:layout_constraintTop_toBottomOf="@id/body"
+        app:layout_constraintStart_toEndOf="@id/input_lat"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1" />
+
+    <TextView
+        android:id="@+id/status_msg"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textColor="@color/warn"
+        android:textSize="13sp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/input_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/back_btn"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/wizard_back"
+        android:textColor="@color/text_secondary"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/grant_btn"

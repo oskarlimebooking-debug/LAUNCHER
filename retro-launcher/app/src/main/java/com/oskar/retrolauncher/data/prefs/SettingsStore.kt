@@ -119,6 +119,13 @@ class SettingsStore(
         prefs.edit().putBoolean(KEY_FIRST_RUN_DONE, done).apply()
     }
 
+    /** OWM API key collected by the T1.33 wizard. Blank → null → WeatherRepository falls back to BuildConfig. */
+    val owmApiKey: String? get() = prefs.getString(KEY_OWM_API_KEY, null)?.takeIf { it.isNotBlank() }
+    fun setOwmApiKey(key: String?) {
+        val clean = key?.trim().orEmpty()
+        writeNullableString(KEY_OWM_API_KEY, clean.takeIf { it.isNotEmpty() })
+    }
+
     // ───────── Theme / trip export / weather refresh (T1.32) ─────────
 
     val theme: Theme
@@ -165,6 +172,7 @@ class SettingsStore(
     val weatherLatFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LAT) { weatherLat }
     val weatherLonFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LON) { weatherLon }
     val firstRunDoneFlow: Flow<Boolean> = flowOfKey(KEY_FIRST_RUN_DONE) { firstRunDone }
+    val owmApiKeyFlow: Flow<String?> = flowOfKey(KEY_OWM_API_KEY) { owmApiKey }
     val themeFlow: Flow<Theme> = flowOfKey(KEY_THEME) { theme }
     val gpxExportFlow: Flow<Boolean> = flowOfKey(KEY_GPX_EXPORT) { gpxExport }
     val weatherRefreshIntervalMinFlow: Flow<Int> =
@@ -228,6 +236,7 @@ class SettingsStore(
         const val KEY_WEATHER_LAT = "weather_lat"
         const val KEY_WEATHER_LON = "weather_lon"
         const val KEY_FIRST_RUN_DONE = "first_run_done"
+        const val KEY_OWM_API_KEY = "owm_api_key"
         const val KEY_THEME = "theme"
         const val KEY_GPX_EXPORT = "gpx_export"
         const val KEY_WEATHER_REFRESH_MIN = "weather_refresh_min"

@@ -41,15 +41,25 @@
     <!-- Wizard -->
     <string name="wizard_welcome_title">Welcome</string>
     <string name="wizard_welcome_body">Set up your launcher in a few quick steps.</string>
-    <string name="wizard_notif_title">Notification access</string>
-    <string name="wizard_notif_body">Required to read media (track, art, transport) from any music app.</string>
     <string name="wizard_loc_title">Location</string>
     <string name="wizard_loc_body">Required for speed, weather, and trip recording.</string>
-    <string name="wizard_battery_title">Battery whitelist</string>
-    <string name="wizard_battery_body">Keeps the GPS service running while the head unit is on.</string>
+    <string name="wizard_notif_title">Notification access</string>
+    <string name="wizard_notif_body">Required to read media (track, art, transport) from any music app.</string>
+    <string name="wizard_launcher_title">Default launcher</string>
+    <string name="wizard_launcher_body">Set Retro Launcher as the default home so it starts when the head unit powers on.</string>
+    <string name="wizard_owm_title">Weather API key</string>
+    <string name="wizard_owm_body">Paste an OpenWeatherMap API key, or skip to disable weather. We\'ll test it before continuing.</string>
+    <string name="wizard_owm_hint">OpenWeatherMap API key</string>
+    <string name="wizard_owm_validating">Checking key…</string>
+    <string name="wizard_owm_invalid">Key didn\'t work — check it or skip.</string>
+    <string name="wizard_home_title">Home location</string>
+    <string name="wizard_home_body">Optional lat/lon used by the weather card. Leave blank to fall back to device GPS.</string>
+    <string name="wizard_home_lat_hint">Latitude</string>
+    <string name="wizard_home_lon_hint">Longitude</string>
     <string name="wizard_grant">Grant</string>
     <string name="wizard_skip">Skip</string>
     <string name="wizard_continue">Continue</string>
+    <string name="wizard_back">Back</string>
     <string name="wizard_done">Done</string>
 
     <!-- Settings -->

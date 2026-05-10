@@ -43,6 +43,24 @@ class WeatherRepository(
     /** True when an OWM API key was supplied — gates network work for callers like WeatherWorker. */
     val isConfigured: Boolean get() = apiKey.isNotBlank()
 
+    /**
+     * T1.33 — hits OWM with the supplied key to verify it. Returns true on
+     * HTTP 200, false on 401/403/other failure or blank input. Never throws.
+     * The wizard uses this on step 5 to gate "Continue" with real feedback.
+     */
+    suspend fun validateApiKey(key: String): Boolean = withContext(Dispatchers.IO) {
+        if (key.isBlank()) return@withContext false
+        runCatching {
+            val url = "$owmBaseUrl/data/2.5/weather".toHttpUrl().newBuilder()
+                .addQueryParameter("lat", "0")
+                .addQueryParameter("lon", "0")
+                .addQueryParameter("appid", key)
+                .build()
+            val req = Request.Builder().url(url).build()
+            http.newCall(req).execute().use { resp -> resp.isSuccessful }
+        }.getOrElse { false }
+    }
+
     suspend fun fetch(lat: Double, lon: Double): Result<WeatherSnapshot> =
         withContext(Dispatchers.IO) {
             runCatching {
