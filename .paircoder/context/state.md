@@ -93,6 +93,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.28 done** (auto-updated by hook)
+
 - **T1.28 done (2026-05-10)** — `AppListRepository` upgraded from the basic
   scaffold (synchronous `loadIcon` + alphabetical sort + no lifecycle) into the
   spec §13.1 implementation:
