@@ -94,6 +94,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.29 done** (auto-updated by hook)
+
 - **T1.29 done (2026-05-10)** — `AppGridFragment` + `AppGridAdapter` audited
   against spec §13.2 and ACs; implementation was already in place from earlier
   scaffolding, no code changes needed:
