@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-09 (T1.27 done — TripsFragment + adapter wired)
+> Last updated: 2026-05-10 (T1.28 done — AppListRepository wired with receiver + Glide loader + SettingsStore order)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** Planning complete and reconciled. 27/49 tasks done (Phase 6 complete: T1.23–T1.27).
-T1.28 (next pending — Phase 7 app grid).
+**Status:** 28/49 tasks done (Phase 6 complete: T1.23–T1.27; Phase 7 started with T1.28).
+T1.29 (next pending — Phase 7 app grid polish).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -66,8 +66,9 @@ Phase 6 — Trip recording (5/5 done)
 - ✓ T1.26 TripCalendarView heatmap (done 2026-05-09)
 - ✓ T1.27 TripsFragment + adapter (done 2026-05-09)
 
-Phase 7 — App grid (0/3 pending)
-- ⏳ T1.28–T1.30 (P1/P1/P2, Cx 8/8/5)
+Phase 7 — App grid (1/3 pending)
+- ✓ T1.28 AppListRepository PackageManager scanning (done 2026-05-10)
+- ⏳ T1.29–T1.30 (P1/P2, Cx 8/5)
 
 Phase 8 — Settings and first-run (0/4 pending)
 - ⏳ T1.31–T1.34 (P1/P1/P1/P2, Cx 5/5/8/3)
@@ -82,8 +83,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–6 done (27/49). Continue with `/start-task T1.28`
-(Phase 7 — App grid scaffolding, Cx 8, P1).
+Phases 1–6 done + T1.28 (28/49). Continue with `/start-task T1.29`
+(Phase 7 — AppGridFragment polish / rail wiring, Cx 8, P1).
 
 ### Backlog
 
@@ -91,6 +92,44 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.28 done (2026-05-10)** — `AppListRepository` upgraded from the basic
+  scaffold (synchronous `loadIcon` + alphabetical sort + no lifecycle) into the
+  spec §13.1 implementation:
+  • Removed `Drawable` from `AppEntry` and added `applicationInfo`. Scans no
+    longer block on per-app icon decode; `refresh()` returns metadata only.
+  • Added `AppIconGlideModule` — a `@GlideModule` registering
+    `ModelLoader<ApplicationInfo, Drawable>` with `ObjectKey("app-icon:$pkg:$uid")`
+    so Glide caches by package + uid (upgrade busts the cache automatically).
+    `AppGridAdapter` / `RailAdapter` now load via `Glide.with(...).load(applicationInfo)`.
+  • Added `start()` / `stop()` lifecycle with a `BroadcastReceiver` listening
+    for `PACKAGE_ADDED/REMOVED/REPLACED/CHANGED` (all data-scheme `package`).
+    Wired `appList.start()` into `ServiceLocator.startup()` so the launcher
+    auto-refreshes the grid within ~1s of install/uninstall.
+  • Filtered the launcher's own package from results (AC5).
+  • Added `SettingsStore.appOrder` (JSON-array of `package/activity` strings)
+    + `setAppOrder()`; `refresh()` applies the stored order first, with
+    unknown entries dropped and not-yet-ordered apps appended alphabetically.
+    `AppListRepository` now takes a `SettingsStore?` ctor param.
+  Tests: new `AppListRepositoryTest` (7 cases via Robolectric +
+  `ShadowPackageManager.installPackage` / `addOrUpdateActivity`) covers
+  self-exclusion, default sort, custom sort, unknown-entry pruning,
+  PACKAGE_ADDED refresh, PACKAGE_REMOVED refresh, and `stop()` unregistering.
+  New `SettingsStoreAppOrderTest` (4 cases) covers default empty, set/get
+  roundtrip, persistence across new `SettingsStore` instances, and clearing.
+  Suite: 225 → 236 unit tests, all green; both `standardDebug` and
+  `systemDebug` flavors assemble; arch check + lint clean.
+
+- **Planning audit (2026-05-10)** — `/pc-plan` re-invoked on
+  `plans/backlogs/backlog-sprint-1-retro-launcher.md`. Pre-flight: budget at
+  0% (well under 80% threshold); Trello not connected → PM-agnostic mode.
+  Verified all 49 task files exist on disk (T1.1–T1.49 contiguous, each
+  with frontmatter + description + ACs) and that the CLI tracks all 49
+  across the two plan IDs (`plan-2026-05-retro-launcher-sprint-1` ×13 +
+  `plan-sprint-1-engage` ×36). 27/49 done through T1.27 (Phases 1–6
+  complete). No new plans, tasks, or backlog edits — planning is fully
+  reconciled. Resume with `/start-task T1.28` (Phase 7 — AppListRepository,
+  Cx 8, P1, depends on T1.10 which is done).
 
 - **T1.27 done** (auto-updated by hook)
 
