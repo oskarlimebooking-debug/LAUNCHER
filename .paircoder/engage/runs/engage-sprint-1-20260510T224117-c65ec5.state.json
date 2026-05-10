@@ -1,0 +1,15 @@
+{
+  "run_id": "engage-sprint-1-20260510T224117-c65ec5",
+  "plan_id": "plan-sprint-1-engage",
+  "sprint": "1",
+  "completed_tasks": [],
+  "paused_task_id": "T1.38",
+  "max_parallel": 3,
+  "hooks_advisory": true,
+  "branch_auto_created": false,
+  "parent_branch": "",
+  "backlog_path": "/Users/oskarsokolov/LAUNCHER/plans/backlogs/backlog-sprint-1-retro-launcher.md",
+  "active_branch": "engage/backlog-sprint-1-retro-launcher",
+  "created_at": "2026-05-10T22:41:17.344839+00:00",
+  "paused_at": "2026-05-10T22:41:17.344839+00:00"
+}
