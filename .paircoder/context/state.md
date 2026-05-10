@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-10 (T1.30 done — Phase 7 complete; next is T1.31, Phase 8)
+> Last updated: 2026-05-11 (T1.31 done — SettingsStore reactive flows + new fields)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 30/49 tasks done (Phase 7 complete: T1.28–T1.30 done).
-T1.31 (next pending — Phase 8, SettingsActivity scaffold).
+**Status:** 31/49 tasks done (Phase 8 in progress: T1.31 done).
+T1.32 (next pending — Phase 8, SettingsActivity scaffold).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -71,8 +71,9 @@ Phase 7 — App grid (3/3 done)
 - ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
 - ✓ T1.30 RailFragment pinned-apps strip (done 2026-05-10)
 
-Phase 8 — Settings and first-run (0/4 pending)
-- ⏳ T1.31–T1.34 (P1/P1/P1/P2, Cx 5/5/8/3)
+Phase 8 — Settings and first-run (1/4 done)
+- ✓ T1.31 SettingsStore SharedPreferences wrapper (done 2026-05-11)
+- ⏳ T1.32–T1.34 (P1/P1/P2, Cx 5/8/3)
 
 Phase 9 — Testing and build (0/4 pending)
 - ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
@@ -84,7 +85,7 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–7 done (30/49). Continue with `/start-task T1.31`
+Phases 1–7 done + T1.31 (31/49). Continue with `/start-task T1.32`
 (Phase 8 — SettingsActivity scaffold, Cx 5, P1).
 
 ### Backlog
@@ -94,11 +95,35 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
-- **T1.30 done** (auto-updated by hook)
-
-- **T1.30 done** (auto-updated by hook)
-
-- **T1.30 done** (auto-updated by hook)
+- **T1.31 done (2026-05-11)** — `SettingsStore` extended per spec §14.2 +
+  task ACs:
+  • New typed properties: `panelRatio: Float` (0.3-0.7 derived from existing
+    Int percent), `gridColumns: Int` (3-5 alias of gridCols), `tripStartSpeedKmh: Int`
+    (alias of speedThresholdKmh), `mapApp: String?`, `voiceApp: String?`,
+    `weatherLat: Float?`, `weatherLon: Float?`, `firstRunDone: Boolean`.
+    Pref keys: `KEY_MAP_APP`, `KEY_VOICE_APP`, `KEY_WEATHER_LAT`,
+    `KEY_WEATHER_LON`, `KEY_FIRST_RUN_DONE`.
+  • New setters: `setMapApp`, `setVoiceApp`, `setWeatherLocation(lat, lon)`,
+    `setFirstRunDone` — all use non-blocking `apply()` (AC4).
+  • Per-property `Flow<T>` exposed for every public property (AC3): `unitsFlow`,
+    `tempUnitFlow`, `speedUnitFlow`, `panelRatioFlow`, `gridColumnsFlow`,
+    `recordTripsFlow`, `tripStartSpeedKmhFlow`, `pinnedAppsFlow`,
+    `appOrderFlow`, `mapAppFlow`, `voiceAppFlow`, `weatherLatFlow`,
+    `weatherLonFlow`, `firstRunDoneFlow`. Built from a private
+    `flowOfKey(key) { read }` helper composing `changes(key)` + `map` +
+    `distinctUntilChanged`.
+  • `pinnedApps` + `appOrder` JSON migrated from `org.json.JSONArray` to a
+    Moshi `List<String>` adapter (AC2). Constructor takes an optional `Moshi`
+    instance, defaulting to a lazy `Moshi.Builder().add(KotlinJsonAdapterFactory()).build()`.
+    Malformed JSON falls back to `emptyList()`.
+  • Tests: `SettingsStoreT131Test.kt` (27 cases) covering defaults,
+    round-trip, malformed-JSON fallback, special chars (quote/slash/unicode),
+    and first-emit semantics for every `Flow<T>`. Existing
+    `SettingsStoreUnitsTest`, `SettingsStorePinnedAppsTest`,
+    `SettingsStoreAppOrderTest` still pass.
+  • File size 203 lines (under 400 hard limit). Existing call sites
+    unaffected — `panelRatioPercent`, `gridCols`, `speedThresholdKmh` etc.
+    retained.
 
 - **T1.30 done (2026-05-10)** — Pinned-app rail integrated into the AppGrid
   page along the bottom of the right panel:
