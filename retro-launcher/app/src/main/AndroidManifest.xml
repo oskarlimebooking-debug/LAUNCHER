@@ -113,9 +113,12 @@
             android:name=".service.LocationService"
             android:exported="false" />
 
-        <!-- Boot receiver -->
+        <!-- Boot receiver. Disabled by default so it cannot fire before the
+             first-run wizard has set up permissions / OWM key. The wizard
+             flips this on via BootReceiverGate.enable() on completion. -->
         <receiver
             android:name=".service.BootReceiver"
+            android:enabled="false"
             android:exported="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>

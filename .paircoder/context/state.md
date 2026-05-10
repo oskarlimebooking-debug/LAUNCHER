@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.33 done — first-run permission wizard, 6 steps)
+> Last updated: 2026-05-11 (T1.34 done — BootReceiver gated on firstRunDone)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 33/49 tasks done (Phase 8 in progress: T1.31–T1.33 done).
-T1.34 (next pending — Phase 8, BootReceiver wake-on-boot, Cx 3, P2).
+**Status:** 34/49 tasks done (Phase 8 complete: T1.31–T1.34 done).
+T1.35 (next pending — Phase 9, testing/build, P1).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -71,11 +71,11 @@ Phase 7 — App grid (3/3 done)
 - ✓ T1.29 AppGridFragment + adapter (done 2026-05-10)
 - ✓ T1.30 RailFragment pinned-apps strip (done 2026-05-10)
 
-Phase 8 — Settings and first-run (3/4 done)
+Phase 8 — Settings and first-run (4/4 done)
 - ✓ T1.31 SettingsStore SharedPreferences wrapper (done 2026-05-11)
 - ✓ T1.32 SettingsFragment PreferenceFragment (done 2026-05-11)
 - ✓ T1.33 First-run permission wizard (done 2026-05-11)
-- ⏳ T1.34 (P2, Cx 3)
+- ✓ T1.34 BootReceiver gated on firstRunDone (done 2026-05-11)
 
 Phase 9 — Testing and build (0/4 pending)
 - ⏳ T1.35–T1.38 (P1/P2/P2/P2, Cx 8/8/3/5)
@@ -87,8 +87,8 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–7 done + T1.31–T1.33 (33/49). Continue with `/start-task T1.34`
-(Phase 8 — BootReceiver wake-on-boot, Cx 3, P2).
+Phases 1–8 done (34/49). Continue with `/start-task T1.35`
+(Phase 9 — testing/build, P1).
 
 ### Backlog
 
@@ -96,6 +96,48 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.34 done (2026-05-11)** — BootReceiver gated on `firstRunDone`. The
+  receiver itself was already implemented in T1.21 (boots → start
+  LocationService + reschedule WeatherWorker via `KEEP` policy). T1.34 adds
+  the missing AC4 piece — the receiver must stay dormant until the user
+  finishes the first-run wizard. Done with:
+  1. Manifest — `android:enabled="false"` on the `<receiver>` declaration so
+     fresh installs cannot react to `BOOT_COMPLETED` until something flips
+     it on. Comment in the manifest names the wizard contract.
+  2. `service/BootReceiverGate.kt` — tiny `object` wrapping
+     `PackageManager.setComponentEnabledSetting` (no reflection, no hidden
+     APIs, AC5) with `enable / disable / syncWithFirstRun` entry points.
+     `DONT_KILL_APP` keeps the process alive across the toggle.
+  3. `WizardActivity.finishWizard` — calls `BootReceiverGate.enable(this)`
+     right after `setFirstRunDone(true)`, so the gate flips at the same
+     moment we commit the flag.
+  4. `ServiceLocator.startup` — adds an idempotent
+     `BootReceiverGate.syncWithFirstRun(app, settings.firstRunDone)` so
+     installs that predate the new manifest default get realigned on the
+     next launch (handles the upgrade case).
+  Tests: new `BootReceiverGateTest` (Robolectric) covers `enable / disable /
+  syncWithFirstRun` against the package manager's actual component-enabled
+  state. New `WizardActivityTest.completing the wizard enables the
+  BootReceiver` walks the full 6-skip flow and asserts the component flips
+  to `COMPONENT_ENABLED_STATE_ENABLED`. `BootReceiverTest` gains a third
+  case asserting `LocationService` is the next started service on
+  `BOOT_COMPLETED` (AC2). All 7 BootReceiver-area tests + the full
+  `:app:testSystemDebugUnitTest` suite pass; arch check clean.
+
+- **T1.33 done** (auto-updated by hook)
+
+- **T1.32 done** (auto-updated by hook)
+
+- **T1.31 done** (auto-updated by hook)
+
+- **T1.30 done** (auto-updated by hook)
+
+- **T1.29 done** (auto-updated by hook)
+
+- **T1.28 done** (auto-updated by hook)
+
+- **T1.27 done** (auto-updated by hook)
 
 - **T1.33 done** (auto-updated by hook)
 
@@ -1512,10 +1554,11 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.30 — closes Phase 7** (RailFragment pinned-apps strip: small
-   horizontal `RecyclerView` of `appList.pinned`, tap to launch, long-press
-   to unpin; integrates with the home shell). Run via `/start-task T1.30`.
-4. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
+1. **T1.35 — opens Phase 9 (testing/build)**. P1, Cx 8. Run via
+   `/start-task T1.35`. With Phase 8 closed (T1.31–T1.34 done) the v0.1 MVP
+   feature surface is complete; remaining sprint scope is hardening,
+   packaging, and v0.2/v0.3 polish.
+2. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
 5. Phases 10–11 (T1.39–T1.49) are v0.2/v0.3 polish and the system-flavor

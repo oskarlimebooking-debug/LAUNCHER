@@ -16,6 +16,7 @@ import com.oskar.retrolauncher.data.trip.SharedPrefsTripStateStore
 import com.oskar.retrolauncher.data.trip.TripRecorder
 import com.oskar.retrolauncher.data.trip.TripRepository
 import com.oskar.retrolauncher.data.weather.WeatherRepository
+import com.oskar.retrolauncher.service.BootReceiverGate
 import com.oskar.retrolauncher.service.LocationService
 import com.oskar.retrolauncher.service.scheduleWeather
 import com.squareup.moshi.Moshi
@@ -125,6 +126,10 @@ class ServiceLocator(private val app: Application) {
         // WorkManager auto-initialization can be absent in tests or pared-down ROMs;
         // if it is, just skip scheduling — the launcher must still come up.
         runCatching { WorkManager.getInstance(app).scheduleWeather() }
+
+        // T1.34 AC4 — enforce the boot-receiver gate every launch so installs
+        // that predate the new manifest default get realigned with firstRunDone.
+        runCatching { BootReceiverGate.syncWithFirstRun(app, settings.firstRunDone) }
 
         appList.start()
         appScope.launch { runCatching { appList.refresh() } }

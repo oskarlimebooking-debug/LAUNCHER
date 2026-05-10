@@ -2,12 +2,15 @@ package com.oskar.retrolauncher
 
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import com.oskar.retrolauncher.data.prefs.SettingsStore
+import com.oskar.retrolauncher.service.BootReceiver
 import com.oskar.retrolauncher.ui.wizard.WizardActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -117,6 +120,30 @@ class WizardActivityTest {
         assertEquals(
             Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS,
             next!!.action,
+        )
+    }
+
+    @Test
+    fun `completing the wizard enables the BootReceiver`() {
+        val ctx = RuntimeEnvironment.getApplication()
+        val component = ComponentName(ctx, BootReceiver::class.java)
+        // Sanity: before completion the receiver is in the manifest-default
+        // (disabled) or anything-but-ENABLED state.
+        val before = ctx.packageManager.getComponentEnabledSetting(component)
+        assertFalse(
+            "BootReceiver must not be ENABLED before the wizard finishes",
+            before == PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+        )
+
+        val activity = Robolectric.buildActivity(WizardActivity::class.java).setup().get()
+        val skip = activity.findViewById<View>(R.id.skip_btn)
+        // Six skips: welcome → … → finish.
+        repeat(6) { skip.performClick() }
+
+        assertEquals(
+            "BootReceiver must be ENABLED once firstRunDone is true",
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            ctx.packageManager.getComponentEnabledSetting(component),
         )
     }
 

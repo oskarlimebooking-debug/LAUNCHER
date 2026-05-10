@@ -4,12 +4,15 @@ import android.content.Intent
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
 import com.oskar.retrolauncher.service.BootReceiver
+import com.oskar.retrolauncher.service.LocationService
 import com.oskar.retrolauncher.service.WeatherWorker
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
@@ -36,6 +39,22 @@ class BootReceiverTest {
             "weather worker must be (re)scheduled by the boot receiver",
             1,
             infos.size,
+        )
+    }
+
+    @Test
+    fun `BOOT_COMPLETED also starts the LocationService`() {
+        val app = RuntimeEnvironment.getApplication()
+        WorkManagerTestInitHelper.initializeTestWorkManager(app)
+
+        BootReceiver().onReceive(app, Intent(Intent.ACTION_BOOT_COMPLETED))
+
+        val started = shadowOf(app).peekNextStartedService()
+        assertNotNull("BootReceiver must start a service on boot", started)
+        assertEquals(
+            "must be the LocationService (T1.34 AC2)",
+            LocationService::class.java.name,
+            started!!.component?.className,
         )
     }
 

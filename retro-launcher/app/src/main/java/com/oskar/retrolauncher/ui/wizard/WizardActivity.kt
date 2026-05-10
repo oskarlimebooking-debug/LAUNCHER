@@ -15,6 +15,7 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
+import com.oskar.retrolauncher.service.BootReceiverGate
 import com.oskar.retrolauncher.util.Permissions
 import kotlinx.coroutines.launch
 
@@ -244,6 +245,8 @@ class WizardActivity : AppCompatActivity() {
 
     private fun finishWizard() {
         App.settings.setFirstRunDone(true)
+        // T1.34 AC4 — BootReceiver stays disabled until setup is complete.
+        BootReceiverGate.enable(this)
         setResult(Activity.RESULT_OK)
         finish()
     }
