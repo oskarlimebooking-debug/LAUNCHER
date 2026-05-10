@@ -94,6 +94,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.30 done** (auto-updated by hook)
+
 - **T1.30 done (2026-05-10)** — Pinned-app rail integrated into the AppGrid
   page along the bottom of the right panel:
   • New `SettingsStore.pinnedApps: List<String>` (package names) +
