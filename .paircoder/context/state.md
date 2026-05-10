@@ -97,6 +97,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.33 done** (auto-updated by hook)
+
 - **T1.33 done (2026-05-11)** — First-run permission wizard rewritten to the
   6-step linear flow named by the task spec:
   1. Welcome (Continue) — no permission action, intro screen.
