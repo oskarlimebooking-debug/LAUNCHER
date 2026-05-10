@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.apps.AppEntry
 
@@ -24,10 +25,15 @@ class AppGridAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = getItem(position)
-        holder.icon.setImageDrawable(item.icon)
+        Glide.with(holder.icon).load(item.applicationInfo).into(holder.icon)
         holder.label.text = item.label
         holder.itemView.setOnClickListener { onClick(item) }
         holder.itemView.setOnLongClickListener { onLongClick(item, holder.itemView) }
+    }
+
+    override fun onViewRecycled(holder: VH) {
+        Glide.with(holder.icon).clear(holder.icon)
+        super.onViewRecycled(holder)
     }
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {

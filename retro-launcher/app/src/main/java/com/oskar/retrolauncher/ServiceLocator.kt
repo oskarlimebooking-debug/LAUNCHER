@@ -72,7 +72,7 @@ class ServiceLocator(private val app: Application) {
 
     val location: LocationRepository by lazy { LocationRepository() }
 
-    val appList: AppListRepository by lazy { AppListRepository(app, app.packageManager) }
+    val appList: AppListRepository by lazy { AppListRepository(app, app.packageManager, settings) }
 
     val trips: TripRepository by lazy {
         TripRepository(dao = db.trips(), activeTripFlow = tripRecorder.activeTrip)
@@ -121,6 +121,7 @@ class ServiceLocator(private val app: Application) {
         // if it is, just skip scheduling — the launcher must still come up.
         runCatching { WorkManager.getInstance(app).scheduleWeather() }
 
+        appList.start()
         appScope.launch { runCatching { appList.refresh() } }
     }
 }

@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import org.json.JSONArray
 
 enum class Units { METRIC, IMPERIAL }
 
@@ -40,6 +41,31 @@ class SettingsStore(private val prefs: SharedPreferences) {
     val showLocationOnStatus: Boolean
         get() = prefs.getBoolean(KEY_SHOW_LOC_STATUS, false)
 
+    /**
+     * User-defined order for the app grid as a list of `package/activity` strings
+     * (ComponentName#flattenToShortString). Empty list means "use the default
+     * alphabetical sort."
+     */
+    val appOrder: List<String>
+        get() {
+            val raw = prefs.getString(KEY_APP_ORDER, null) ?: return emptyList()
+            return runCatching {
+                val arr = JSONArray(raw)
+                (0 until arr.length()).map { arr.getString(it) }
+            }.getOrElse { emptyList() }
+        }
+
+    fun setAppOrder(order: List<String>) {
+        val edit = prefs.edit()
+        if (order.isEmpty()) {
+            edit.remove(KEY_APP_ORDER)
+        } else {
+            val arr = JSONArray().apply { order.forEach { put(it) } }
+            edit.putString(KEY_APP_ORDER, arr.toString())
+        }
+        edit.apply()
+    }
+
     /** Cold + hot stream of changes for the given key. */
     fun changes(key: String): Flow<String> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, k ->
@@ -65,5 +91,6 @@ class SettingsStore(private val prefs: SharedPreferences) {
         const val KEY_RECORD_TRIPS = "record_trips"
         const val KEY_SPEED_THRESHOLD = "speed_threshold"
         const val KEY_SHOW_LOC_STATUS = "show_loc_status"
+        const val KEY_APP_ORDER = "app_order"
     }
 }

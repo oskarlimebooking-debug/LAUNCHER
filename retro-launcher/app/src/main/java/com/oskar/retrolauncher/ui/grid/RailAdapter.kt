@@ -7,6 +7,7 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.apps.AppEntry
 
@@ -22,8 +23,13 @@ class RailAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = getItem(position)
-        holder.icon.setImageDrawable(item.icon)
+        Glide.with(holder.icon).load(item.applicationInfo).into(holder.icon)
         holder.itemView.setOnClickListener { onClick(item) }
+    }
+
+    override fun onViewRecycled(holder: VH) {
+        Glide.with(holder.icon).clear(holder.icon)
+        super.onViewRecycled(holder)
     }
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
