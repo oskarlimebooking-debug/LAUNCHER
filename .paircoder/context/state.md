@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.36 done — Espresso instrumented suite + RetroTestRunner)
+> Last updated: 2026-05-11 (T1.37 done — Manual test matrix at docs/manual-test-matrix.md)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 36/49 tasks done (Phase 9 in progress: T1.35 + T1.36 done).
-T1.37 (next pending — Phase 9, testing/build, P2).
+**Status:** 37/49 tasks done (Phase 9 in progress: T1.35 + T1.36 + T1.37 done).
+T1.38 (next pending — Phase 9, build/install scripts, P2).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -77,10 +77,11 @@ Phase 8 — Settings and first-run (4/4 done)
 - ✓ T1.33 First-run permission wizard (done 2026-05-11)
 - ✓ T1.34 BootReceiver gated on firstRunDone (done 2026-05-11)
 
-Phase 9 — Testing and build (2/4 done)
+Phase 9 — Testing and build (3/4 done)
 - ✓ T1.35 Unit tests for repos and recorders (done 2026-05-11)
 - ✓ T1.36 Instrumented tests for UI fragments (done 2026-05-11)
-- ⏳ T1.37–T1.38 (P2/P2, Cx 3/5)
+- ✓ T1.37 Manual test matrix doc (done 2026-05-11)
+- ⏳ T1.38 Build and install scripts for rooted HU (P2, Cx 5)
 
 Phase 10 — v0.2 polish (0/5 pending)
 - ⏳ T1.39–T1.43 (all P2, Cx 13/5/8/5/5)
@@ -89,7 +90,7 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–8 done + T1.35 + T1.36 (36/49). Continue with `/start-task T1.37`
+Phases 1–8 done + T1.35 + T1.36 + T1.37 (37/49). Continue with `/start-task T1.38`
 (Phase 9 — testing/build, P2).
 
 ### Backlog
@@ -99,11 +100,19 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
-- **T1.36 done** (auto-updated by hook)
-
-- **T1.36 done** (auto-updated by hook)
-
-- **T1.36 done** (auto-updated by hook)
+- **T1.37 done (2026-05-11)** — Authored `docs/manual-test-matrix.md` per
+  spec §19.3. Covers all 6 v0.1 user-facing features (launcher/status bar,
+  media tile, weather tile, speedometer, trip recorder, app grid) plus
+  supporting Settings and First-run wizard rows, plus all 5 v0.2 polish
+  items (trip detail mini-map, GPX export, rail customization, themes,
+  steering-wheel keys). Each row has numbered steps + expected result and
+  cites the originating spec section. Adds a 9-item pre-flight checklist
+  (root status, build flavor, OWM key, notification listener access,
+  location perm, time sync, adb reach, default-launcher state, network)
+  and the §19.4 bench targets table. Tables use GitHub pipe-table syntax —
+  renders cleanly on GitHub. Doc lives at repo root `docs/` alongside
+  `headunit-launcher-spec.md`. ACs (matrix scope, steps+expected per row,
+  pre-flight, GH readability, location under `docs/`) all met.
 
 - **T1.36 done (2026-05-11)** — Espresso instrumented suite for the six UI
   fragments (Home, Media, Weather, Speed, Trips, AppGrid).
@@ -1657,9 +1666,10 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.37 — Phase 9 (testing/build), Lint baseline + CI guard**. P2, Cx 3.
-   Run via `/start-task T1.37`. Builds on T1.35 (jacoco) + T1.36 (Espresso)
-   to round out the Phase 9 quality gate.
+1. **T1.38 — Phase 9 (testing/build), Build and install scripts for rooted HU**.
+   P2, Cx 5. Run via `/start-task T1.38`. Automates the install paths the
+   T1.37 manual test matrix documents (standard flavor install, system
+   flavor platform-signing + `/system/priv-app/` push, set-as-default).
 2. **T1.36 follow-ups (out-of-scope this commit)** — wire `connectedStandardDebugAndroidTest`
    into a CI workflow with an API 23 emulator (workflow file does not yet
    exist under `.github/`); upload `screenshots/` from the test apk's
