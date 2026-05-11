@@ -101,6 +101,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.39 done** (auto-updated by hook)
+
 - **T1.39 done (2026-05-11)** — Trip detail screen with offline mini-map.
   Implements `TripDetailFragment` per spec §10 (the "tap a trip → detail with
   mini-map" line in the trip-recorder section). Five files added, two edited.
