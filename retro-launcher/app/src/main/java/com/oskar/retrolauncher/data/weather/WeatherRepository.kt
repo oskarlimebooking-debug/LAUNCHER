@@ -2,6 +2,7 @@ package com.oskar.retrolauncher.data.weather
 
 import android.content.Context
 import android.location.Geocoder
+import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.BuildConfig
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.Dispatchers
@@ -125,6 +126,17 @@ class WeatherRepository(
                 }
             }.getOrNull() ?: "—"
         }
+
+    /**
+     * T1.36 — instrumented tests publish a fixture snapshot directly so the
+     * fragment can render the populated state without hitting OpenWeatherMap.
+     * Bypasses the on-disk cache (we never want a test fixture to leak across
+     * runs as a "stale" cached snapshot).
+     */
+    @VisibleForTesting
+    fun setSnapshotForTest(snap: WeatherSnapshot?) {
+        _state.value = snap
+    }
 
     private fun loadCached(): WeatherSnapshot? =
         prefs.getString("snap", null)?.let {

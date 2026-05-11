@@ -2,6 +2,7 @@ package com.oskar.retrolauncher
 
 import android.app.Application
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.data.apps.AppListRepository
 import com.oskar.retrolauncher.data.location.LocationRepository
 import com.oskar.retrolauncher.data.media.MediaRepository
@@ -17,12 +18,23 @@ import timber.log.Timber
 
 class App : Application() {
 
-    val service: ServiceLocator by lazy { ServiceLocator(this) }
+    /**
+     * Lazily constructed in [onCreate]. Instrumented tests pre-install a fake
+     * subclass via [com.oskar.retrolauncher] test-runner hooks — see T1.36.
+     * Setting it before `onCreate` runs causes the default construction in
+     * [onCreate] to be skipped, satisfying the AC that no real network or
+     * sensor work runs during fragment instrumented tests.
+     */
+    @set:VisibleForTesting
+    lateinit var service: ServiceLocator
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        if (!::service.isInitialized) {
+            service = ServiceLocator(this)
+        }
         service.startup()
     }
 

@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,6 +127,18 @@ class AppListRepository(
         val byPkg = HashMap<String, AppEntry>(all.size)
         for (e in all) byPkg.putIfAbsent(e.packageName, e)
         return packages.mapNotNull { byPkg[it] }
+    }
+
+    /**
+     * T1.36 — instrumented tests seed the in-memory state directly so they
+     * never depend on what apps the emulator happens to have installed.
+     * Skips the broadcast-receiver and PackageManager scan paths entirely.
+     */
+    @VisibleForTesting
+    fun setForTest(all: List<AppEntry>, pinned: List<String> = emptyList()) {
+        _all.value = all
+        _pinnedPackages.value = pinned
+        _rail.value = resolveRail(pinned, all)
     }
 
     companion object {

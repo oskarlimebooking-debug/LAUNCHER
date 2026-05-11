@@ -20,7 +20,9 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // T1.36 — custom runner installs a TestServiceLocator before App.onCreate
+        // so instrumented fragment tests never touch real network or sensors.
+        testInstrumentationRunner = "com.oskar.retrolauncher.test.RetroTestRunner"
 
         // OpenWeather API key from local.properties — never commit
         val owmKey = project.findProperty("OWM_API_KEY")?.toString().orEmpty()
@@ -153,6 +155,13 @@ dependencies {
 
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)
+    androidTestImplementation(libs.androidx.test.espresso.contrib)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.room.testing)
+    // fragment-testing ships an empty debug-only test activity used by FragmentScenario.
+    debugImplementation(libs.androidx.fragment.testing)
 }
 
 // T1.35: jacoco coverage for unit tests.

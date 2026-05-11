@@ -38,9 +38,9 @@ import java.util.concurrent.TimeUnit
  * Constructor takes Application context only — never an Activity — so retained references
  * cannot leak a destroyed Activity (T1.6 AC5).
  */
-class ServiceLocator(private val app: Application) {
+open class ServiceLocator(protected val app: Application) {
 
-    val http: OkHttpClient by lazy {
+    open val http: OkHttpClient by lazy {
         // T1.20 AC2 — 5 MB on-disk LRU cache rooted at cacheDir/weather/.
         // OkHttp's Cache implementation is itself an LRU evictor that respects
         // server cache-control headers, so a single Cache instance satisfies
@@ -53,42 +53,42 @@ class ServiceLocator(private val app: Application) {
             .build()
     }
 
-    val moshi: Moshi by lazy {
+    open val moshi: Moshi by lazy {
         Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
     }
 
-    val db: AppDb by lazy {
+    open val db: AppDb by lazy {
         Room.databaseBuilder(app, AppDb::class.java, "retro").build()
     }
 
-    val prefs: SharedPreferences by lazy {
+    open val prefs: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(app)
     }
 
-    val settings: SettingsStore by lazy { SettingsStore(prefs) }
+    open val settings: SettingsStore by lazy { SettingsStore(prefs) }
 
-    val media: MediaRepository by lazy { MediaRepository() }
+    open val media: MediaRepository by lazy { MediaRepository() }
 
-    val weather: WeatherRepository by lazy {
+    open val weather: WeatherRepository by lazy {
         // T1.33 — prefer the user-entered key from the first-run wizard,
         // fall back to BuildConfig (typically empty in CI / unsigned builds).
         val key = settings.owmApiKey ?: BuildConfig.OWM_API_KEY
         WeatherRepository(app, http, moshi, apiKey = key)
     }
 
-    val location: LocationRepository by lazy { LocationRepository() }
+    open val location: LocationRepository by lazy { LocationRepository() }
 
-    val appList: AppListRepository by lazy { AppListRepository(app, app.packageManager, settings) }
+    open val appList: AppListRepository by lazy { AppListRepository(app, app.packageManager, settings) }
 
-    val trips: TripRepository by lazy {
+    open val trips: TripRepository by lazy {
         TripRepository(dao = db.trips(), activeTripFlow = tripRecorder.activeTrip)
     }
 
-    val appScope: CoroutineScope by lazy {
+    open val appScope: CoroutineScope by lazy {
         CoroutineScope(Dispatchers.Default + SupervisorJob())
     }
 
-    val tripRecorder: TripRecorder by lazy {
+    open val tripRecorder: TripRecorder by lazy {
         TripRecorder(
             scope = appScope,
             dao = db.trips(),
@@ -107,7 +107,7 @@ class ServiceLocator(private val app: Application) {
      * periodic weather refresh, eagerly populating the app list. Idempotent — safe to call
      * exactly once from `App.onCreate`.
      */
-    fun startup() {
+    open fun startup() {
         appScope.launch {
             settings.changes(SettingsStore.KEY_RECORD_TRIPS).collect {
                 tripRecorder.setEnabled(settings.recordTrips)

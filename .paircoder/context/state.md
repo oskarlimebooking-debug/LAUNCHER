@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.35 done — unit-test suite, 88% line coverage, jacoco wired)
+> Last updated: 2026-05-11 (T1.36 done — Espresso instrumented suite + RetroTestRunner)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 35/49 tasks done (Phase 9 in progress: T1.35 done).
-T1.36 (next pending — Phase 9, testing/build, P2).
+**Status:** 36/49 tasks done (Phase 9 in progress: T1.35 + T1.36 done).
+T1.37 (next pending — Phase 9, testing/build, P2).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -77,9 +77,10 @@ Phase 8 — Settings and first-run (4/4 done)
 - ✓ T1.33 First-run permission wizard (done 2026-05-11)
 - ✓ T1.34 BootReceiver gated on firstRunDone (done 2026-05-11)
 
-Phase 9 — Testing and build (1/4 done)
+Phase 9 — Testing and build (2/4 done)
 - ✓ T1.35 Unit tests for repos and recorders (done 2026-05-11)
-- ⏳ T1.36–T1.38 (P2/P2/P2, Cx 8/3/5)
+- ✓ T1.36 Instrumented tests for UI fragments (done 2026-05-11)
+- ⏳ T1.37–T1.38 (P2/P2, Cx 3/5)
 
 Phase 10 — v0.2 polish (0/5 pending)
 - ⏳ T1.39–T1.43 (all P2, Cx 13/5/8/5/5)
@@ -88,7 +89,7 @@ Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–8 done + T1.35 (35/49). Continue with `/start-task T1.36`
+Phases 1–8 done + T1.35 + T1.36 (36/49). Continue with `/start-task T1.37`
 (Phase 9 — testing/build, P2).
 
 ### Backlog
@@ -97,6 +98,67 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.36 done (2026-05-11)** — Espresso instrumented suite for the six UI
+  fragments (Home, Media, Weather, Speed, Trips, AppGrid).
+  1. **Test infra** in `app/src/androidTest/`:
+     - `RetroTestRunner` extends `AndroidJUnitRunner` and pre-installs a
+       `TestServiceLocator` on the `App` instance before `App.onCreate`.
+       Wired via `testInstrumentationRunner` in `app/build.gradle.kts`.
+     - `TestServiceLocator` extends the now-`open` `ServiceLocator`. It
+       overrides `prefs` (throwaway file, cleared per process), `db`
+       (in-memory Room), `media` (60 s ticker so Espresso idle waits aren't
+       starved), `weather` (loopback URLs + empty API key → `isConfigured`
+       false), and most importantly `startup()` → no-op (no foreground
+       LocationService, no WorkManager, no boot-receiver sync, no implicit
+       PackageManager scan).
+     - `ScreenshotOnFailureRule` (TestWatcher) dumps a PNG to
+       `externalCacheDir/screenshots/{Class}-{method}.png` on `failed()`.
+       Designed for the CI artifact upload to pick up.
+     - `TestData` factory object: `mediaState()`, `weatherSnapshot()`,
+       `tripEntity()`, `appEntry()`.
+  2. **Production-code touch points** (additive, non-breaking):
+     - `App.service` is now `lateinit var` (was `val by lazy`) so the
+       runner can inject the test locator pre-`onCreate`. `onCreate`
+       guards with `::service.isInitialized`.
+     - `ServiceLocator` is now `open class` with all repos as `open val`
+       and `startup()` as `open fun`. Constructor param visibility
+       widened from `private val app` to `protected val app` for subclass
+       access. Existing T1.6 Robolectric assertions still pass.
+     - `WeatherRepository.setSnapshotForTest(snap)` — `@VisibleForTesting`
+       publishes a fixture snapshot directly to the StateFlow.
+     - `AppListRepository.setForTest(all, pinned)` — `@VisibleForTesting`
+       seeds the in-memory state without touching PackageManager.
+  3. **Per-fragment tests** (3 each = 18 total) using
+     `androidx.fragment:fragment-testing` `FragmentScenario`:
+     - `HomeFragmentInstrumentedTest`: default 0.40 split + page 1 (grid),
+       panel-ratio change flows into `home_split` Guideline, programmatic
+       page change to Trips lands.
+     - `MediaFragmentInstrumentedTest`: empty state shows "Nothing
+       playing", populated state renders title + artist, tap play/pause
+       no-crash + state-change re-binds the icon.
+     - `WeatherFragmentInstrumentedTest`: empty state placeholder,
+       populated state renders condition (title-cased) + city + °temp,
+       snapshot churn reverts to placeholder when cleared.
+     - `SpeedFragmentInstrumentedTest`: zero speed at attach,
+       `LocationRepository.push()` of 15 m/s advances the gauge,
+       speedometer is laid out (non-zero size, threshold 50 km/h).
+     - `TripsFragmentInstrumentedTest`: empty DB → "No trips" visible,
+       inserted trip → list count ≥ 1, calendar `onDaySelected` callback
+       fires with a non-zero day.
+     - `AppGridFragmentInstrumentedTest`: empty seed → 0 items, 4-app
+       seed → 4 grid + 1 rail, tap item-0 doesn't crash.
+  4. **Build wiring** (`app/build.gradle.kts` + `gradle/libs.versions.toml`):
+     added `androidx.test:runner:1.5.2`, `:rules:1.5.0`, `:core-ktx:1.5.0`,
+     `androidx.test.espresso:espresso-contrib:3.5.1`, and
+     `androidx.fragment:fragment-testing:1.6.2` (debugImplementation —
+     ships an empty test activity used by FragmentScenario).
+  Local verification: `:app:assembleStandardDebugAndroidTest` and
+  `:app:testStandardDebugUnitTest` both green. The AC-mandated run
+  (`./gradlew :app:connectedStandardDebugAndroidTest`) requires a live
+  emulator/device — not executable in this dev env (no `adb`, no AVD).
+  Tests are written for API 23+ and use `Thread.sleep(150–800 ms)` for
+  observer/animator settles, well under the 5-min budget cap.
 
 - **T1.35 done (2026-05-11)** — Unit-test coverage for repos + recorders.
   Sprint-1 already had a deep test suite (320+ JUnit/Robolectric cases) but no
@@ -1589,10 +1651,15 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.35 — opens Phase 9 (testing/build)**. P1, Cx 8. Run via
-   `/start-task T1.35`. With Phase 8 closed (T1.31–T1.34 done) the v0.1 MVP
-   feature surface is complete; remaining sprint scope is hardening,
-   packaging, and v0.2/v0.3 polish.
+1. **T1.37 — Phase 9 (testing/build), Lint baseline + CI guard**. P2, Cx 3.
+   Run via `/start-task T1.37`. Builds on T1.35 (jacoco) + T1.36 (Espresso)
+   to round out the Phase 9 quality gate.
+2. **T1.36 follow-ups (out-of-scope this commit)** — wire `connectedStandardDebugAndroidTest`
+   into a CI workflow with an API 23 emulator (workflow file does not yet
+   exist under `.github/`); upload `screenshots/` from the test apk's
+   externalCacheDir as an artifact on failure; consider replacing
+   deprecated `androidx.test.runner.screenshot.Screenshot` with
+   `UiDevice.takeScreenshot` once uiautomator is added.
 2. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
    ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
    for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
