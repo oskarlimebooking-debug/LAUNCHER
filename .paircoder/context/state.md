@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.37 done — Manual test matrix at docs/manual-test-matrix.md)
+> Last updated: 2026-05-11 (T1.39 done — Trip detail screen with offline mini-map via osmdroid)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 37/49 tasks done (Phase 9 in progress: T1.35 + T1.36 + T1.37 done).
-T1.38 (next pending — Phase 9, build/install scripts, P2).
+**Status:** 39/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39 done).
+T1.40 (next pending — Phase 10, GPX export per trip, P2 Cx 5).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -77,21 +77,22 @@ Phase 8 — Settings and first-run (4/4 done)
 - ✓ T1.33 First-run permission wizard (done 2026-05-11)
 - ✓ T1.34 BootReceiver gated on firstRunDone (done 2026-05-11)
 
-Phase 9 — Testing and build (3/4 done)
+Phase 9 — Testing and build (4/4 done)
 - ✓ T1.35 Unit tests for repos and recorders (done 2026-05-11)
 - ✓ T1.36 Instrumented tests for UI fragments (done 2026-05-11)
 - ✓ T1.37 Manual test matrix doc (done 2026-05-11)
-- ⏳ T1.38 Build and install scripts for rooted HU (P2, Cx 5)
+- ✓ T1.38 Build and install scripts for rooted HU (done 2026-05-11)
 
-Phase 10 — v0.2 polish (0/5 pending)
-- ⏳ T1.39–T1.43 (all P2, Cx 13/5/8/5/5)
+Phase 10 — v0.2 polish (1/5 done)
+- ✓ T1.39 Trip detail screen with offline mini-map (done 2026-05-11)
+- ⏳ T1.40–T1.43 (all P2, Cx 5/8/5/5)
 
 Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–8 done + T1.35 + T1.36 + T1.37 (37/49). Continue with `/start-task T1.38`
-(Phase 9 — testing/build, P2).
+Phases 1–9 done + T1.39 (39/49). Continue with `/start-task T1.40`
+(Phase 10 — GPX export per trip, P2 Cx 5).
 
 ### Backlog
 
@@ -99,6 +100,84 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.39 done (2026-05-11)** — Trip detail screen with offline mini-map.
+  Implements `TripDetailFragment` per spec §10 (the "tap a trip → detail with
+  mini-map" line in the trip-recorder section). Five files added, two edited.
+  1. **`data/trip/TripStats.kt`** — pure computation. `fromPoints(List<TripPoint>)`
+     yields distance (Haversine, EARTH_RADIUS_M = 6 371 008.8 m), duration
+     (last.tsMs − first.tsMs), max-speed (max over `speedMs` including the
+     first point), avg-speed (distance / duration_s). `GeoBoundingBox.fromPoints`
+     gives the lat/lon span for `zoomToBoundingBox`. `crossCheck(entity, stats,
+     tol)` compares persisted aggregates with the recomputed values within a
+     relative tolerance — used for AC4 sanity and exposed for tests.
+  2. **`data/trip/NominatimAddressCache.kt`** — SharedPreferences-backed cache
+     (`nominatim_addr`) keyed by lat/lon rounded to 4 decimals (~11 m at the
+     equator). `labelOrFallback(lat, lon, explicit)` resolves in three steps:
+     explicit `TripEntity.{start,end}Label` → cached Nominatim string →
+     `"%.4f, %.4f".format(lat, lon)`. Two trips at the same parking spot share
+     one entry; cache survives across instances backed by the same prefs.
+  3. **`data/trip/OsmdroidTilesConfig.kt`** — one-shot osmdroid bootstrap.
+     `ensureInitialized(ctx)` sets `userAgentValue = "retro-launcher/0.2"`
+     (Nominatim TOS) and reroutes `osmdroidBasePath` + `osmdroidTileCache` into
+     `cacheDir/osmdroid/`. Seeds a bundled MBTiles file from
+     `assets/tiles/launcher.mbtiles` if present; missing-asset path is a silent
+     no-op so the launcher still comes up. `applyDefaults(map)` flips
+     `setUseDataConnection(false)` for offline-first behavior (AC1) and turns
+     on multi-touch controls (AC3).
+  4. **`ui/trips/TripDetailViewModel.kt`** — sealed `TripDetailUiState`
+     (`Loading` / `Empty` / `Loaded`). `Loaded` carries trip + points + stats +
+     bbox + start/end addresses (already resolved through the cache) +
+     `aggregatesMatch` flag (AC4). `load()` runs inside `viewModelScope`
+     (Main + SupervisorJob) — Room's suspend `@Query` already hops to its
+     own executor so we don't block UI. `Factory(repo, addrCache, tripId,
+     entity)` is what the fragment uses with `by viewModels`.
+  5. **`ui/trips/TripDetailFragment.kt`** — `Fragment(R.layout.fragment_trip_detail)`.
+     Bootstraps osmdroid in `onViewCreated`, attaches Polyline overlay
+     (`#FF8500` accent, 8 px stroke) on every `Loaded` emit, rebuilds bounds
+     with 10% padding and `map.post { zoomToBoundingBox(...) }`. Hooks
+     `map.onResume/onPause` for the Surface lifecycle. Companion provides
+     `argsFor(trip)` + key constants for the `Bundle` round-trip.
+  6. **`res/layout/fragment_trip_detail.xml`** — LinearLayout vertical: top
+     header (back button + endpoints title), middle `org.osmdroid.views.MapView`
+     (`@+id/trip_map`, weight=1), bottom stats row (`stat_distance`,
+     `stat_duration`, `stat_max_speed`, `stat_avg_speed`) + `stat_start_addr` +
+     `stat_end_addr`. New strings in `values/strings.xml`:
+     `trip_detail_back`, `trip_detail_title_fmt`, four `trip_stat_*_fmt`,
+     `trip_detail_start_fmt`, `trip_detail_end_fmt`.
+  7. **`AndroidManifest.xml`** — adds `WRITE_EXTERNAL_STORAGE` capped at
+     `maxSdkVersion=28` for osmdroid's sdcard tile dir. App's `minSdk=23` /
+     `targetSdk=28` keeps the manifest scope tight.
+  8. **`build.gradle.kts` + `libs.versions.toml`** — `osmdroid-android:6.1.18`
+     added as `osmdroid` library. No transitive Google Play Services.
+  9. **`ui/trips/TripsAdapter.kt`** — constructor gains an optional
+     `onTripClicked: ((TripEntity) -> Unit)? = null` callback (defaulted so
+     existing `TripsAdapter()` callers stay green). `onBindViewHolder` wires
+     `holder.itemView.setOnClickListener`.
+  10. **`ui/trips/TripsFragment.kt`** — wires the click → `openTripDetail(trip)`
+      → `requireActivity().supportFragmentManager.beginTransaction()
+      .replace(android.R.id.content, detail, "trip_detail")
+      .addToBackStack("trip_detail").commit()`. Detail screen overlays the
+      whole launcher; back-press pops back to the right panel.
+  Tests added: **TripStatsTest (7)** — empty/single/two/two-point math, max
+  speed detection, avg = distance/duration, full cross-check against a
+  TripEntity (1% tol), tolerance-violating mismatch detected at 5%.
+  **NominatimAddressCacheTest (8)** — cold lookup null, put-then-lookup hit,
+  rounding precision (~11 m), label override priority chain, lat/lon
+  fallback formatting, cache survives across instances.
+  **TripDetailViewModelTest (6)** — Loaded state, cold-cache fallback to
+  lat/lon strings, warm-cache city names, explicit entity-label override,
+  empty-points → Empty state, bounding box covers all points.
+  **TripDetailFragmentTest (1, Robolectric)** — walks compiled
+  `fragment_trip_detail.xml` for the 8 required IDs (`trip_map`,
+  `trip_stats`, 4× `stat_*`, 2× `stat_*_addr`, `trip_detail_back`) and
+  vertical root orientation. MapView itself can't render under Robolectric
+  but the layout walk catches the structural contract.
+  Verification: `:app:testStandardDebugUnitTest` → 354 tests, 0 failures
+  (was 332 in T1.35, +22 new). `:app:assembleStandardDebug` green.
+  `bpsai-pair arch check` clean on all 7 modified/new production files.
+  Instrumented `:app:connectedStandardDebugAndroidTest` requires a live
+  emulator + tile-cache fixture — not executable in this dev env.
 
 - **T1.37 done (2026-05-11)** — Authored `docs/manual-test-matrix.md` per
   spec §19.3. Covers all 6 v0.1 user-facing features (launcher/status bar,

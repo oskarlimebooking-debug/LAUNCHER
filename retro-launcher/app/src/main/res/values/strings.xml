@@ -33,6 +33,16 @@
     <string name="trip_active_fmt">Trip %1$s · %2$s · %3$s avg</string>
     <string name="trips_summary_fmt">%1$d trips · %2$s this %3$s</string>
 
+    <!-- Trip detail -->
+    <string name="trip_detail_back">← Back</string>
+    <string name="trip_detail_title_fmt">%1$s → %2$s</string>
+    <string name="trip_stat_distance_fmt">Dist %1$s</string>
+    <string name="trip_stat_duration_fmt">Time %1$s</string>
+    <string name="trip_stat_max_fmt">Max %1$.0f %2$s</string>
+    <string name="trip_stat_avg_fmt">Avg %1$.0f %2$s</string>
+    <string name="trip_detail_start_fmt">From: %1$s</string>
+    <string name="trip_detail_end_fmt">To: %1$s</string>
+
     <!-- Grid -->
     <string name="grid_pin_to_rail">Pin to rail</string>
     <string name="grid_unpin">Unpin</string>

@@ -15,7 +15,9 @@ import com.oskar.retrolauncher.util.formatHM
 import com.oskar.retrolauncher.util.metersPerSecondToDisplay
 import com.oskar.retrolauncher.util.metersToDisplay
 
-class TripsAdapter : ListAdapter<TripEntity, TripsAdapter.VH>(DIFF) {
+class TripsAdapter(
+    private val onTripClicked: ((TripEntity) -> Unit)? = null,
+) : ListAdapter<TripEntity, TripsAdapter.VH>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
@@ -25,6 +27,7 @@ class TripsAdapter : ListAdapter<TripEntity, TripsAdapter.VH>(DIFF) {
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = getItem(position)
+        holder.itemView.setOnClickListener { onTripClicked?.invoke(item) }
         val units = App.settings.units
         val avgUnit = if (units == Units.METRIC) "kph" else "mph"
         val maxUnit = avgUnit

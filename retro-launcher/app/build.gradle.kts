@@ -142,6 +142,7 @@ dependencies {
     kapt(libs.glide.compiler)
 
     implementation(libs.timber)
+    implementation(libs.osmdroid)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

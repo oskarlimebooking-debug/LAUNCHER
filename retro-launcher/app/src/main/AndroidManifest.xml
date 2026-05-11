@@ -31,6 +31,12 @@
     <!-- App embedding (system flavor only — held back behind ENABLE_EMBEDDING in v0.1) -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- osmdroid tile cache (offline MBTiles + cached tiles). API 23-28 only;
+         on minSdk=23 / targetSdk=28 we still need this for sdcard tile dir. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <!-- Discover launchable apps for the drawer -->
     <queries>
         <intent>

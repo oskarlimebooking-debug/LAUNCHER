@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
+import com.oskar.retrolauncher.data.trip.TripEntity
 import com.oskar.retrolauncher.util.formatRelativeDay
 import com.oskar.retrolauncher.util.metersToDisplay
 
@@ -28,7 +29,7 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
         val list = view.findViewById<RecyclerView>(R.id.trip_list)
         val empty = view.findViewById<TextView>(R.id.empty)
 
-        adapter = TripsAdapter()
+        adapter = TripsAdapter(onTripClicked = { trip -> openTripDetail(trip) })
         list.layoutManager = LinearLayoutManager(requireContext())
         list.adapter = adapter
 
@@ -84,5 +85,22 @@ class TripsFragment : Fragment(R.layout.fragment_trips) {
             adapter.submitList(dayTrips)
             empty.visibility = if (dayTrips.isEmpty()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun openTripDetail(trip: TripEntity) {
+        val detail = TripDetailFragment().apply {
+            arguments = TripDetailFragment.argsFor(trip)
+        }
+        // The HomeFragment pager hosts TripsFragment via a child FragmentManager;
+        // push onto the activity-level manager so the detail screen overlays the
+        // whole launcher (clearing back to the right panel via back-press).
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(android.R.id.content, detail, TAG_TRIP_DETAIL)
+            .addToBackStack(TAG_TRIP_DETAIL)
+            .commit()
+    }
+
+    private companion object {
+        const val TAG_TRIP_DETAIL = "trip_detail"
     }
 }
