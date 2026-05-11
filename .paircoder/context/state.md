@@ -99,6 +99,12 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.36 done** (auto-updated by hook)
+
+- **T1.36 done** (auto-updated by hook)
+
+- **T1.36 done** (auto-updated by hook)
+
 - **T1.36 done (2026-05-11)** — Espresso instrumented suite for the six UI
   fragments (Home, Media, Weather, Speed, Trips, AppGrid).
   1. **Test infra** in `app/src/androidTest/`:
