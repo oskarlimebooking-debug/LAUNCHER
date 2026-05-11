@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.39 done — Trip detail screen with offline mini-map via osmdroid)
+> Last updated: 2026-05-11 (T1.40 done — GPX export per trip with MediaStore-visible writer + Snackbar feedback)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 39/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39 done).
-T1.40 (next pending — Phase 10, GPX export per trip, P2 Cx 5).
+**Status:** 40/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39, T1.40 done).
+T1.41 (next pending — Phase 10, P2 Cx 8).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -83,16 +83,17 @@ Phase 9 — Testing and build (4/4 done)
 - ✓ T1.37 Manual test matrix doc (done 2026-05-11)
 - ✓ T1.38 Build and install scripts for rooted HU (done 2026-05-11)
 
-Phase 10 — v0.2 polish (1/5 done)
+Phase 10 — v0.2 polish (2/5 done)
 - ✓ T1.39 Trip detail screen with offline mini-map (done 2026-05-11)
-- ⏳ T1.40–T1.43 (all P2, Cx 5/8/5/5)
+- ✓ T1.40 GPX export per trip (done 2026-05-11)
+- ⏳ T1.41–T1.43 (all P2, Cx 8/5/5)
 
 Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–9 done + T1.39 (39/49). Continue with `/start-task T1.40`
-(Phase 10 — GPX export per trip, P2 Cx 5).
+Phases 1–9 done + T1.39, T1.40 (40/49). Continue with `/start-task T1.41`
+(Phase 10, P2 Cx 8).
 
 ### Backlog
 
@@ -100,6 +101,62 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.40 done (2026-05-11)** — GPX export per trip. Pure `GpxXml` serializer +
+  Context-bound `GpxExporter` write a GPX 1.1 file for any `TripEntity` +
+  `List<TripPoint>` into a MediaStore-visible Downloads/RetroLauncher dir.
+  1. **`data/trip/GpxXml.kt`** — `serialize(trip, points): String` uses
+     `android.util.Xml.newSerializer()` (the platform's KXmlSerializer, no
+     third-party XML lib). Default namespace bound to
+     `http://www.topografix.com/GPX/1/1`; `gpxtpx` prefix bound to
+     `http://www.garmin.com/xmlschemas/TrackPointExtension/v1`. Document
+     shape: `<gpx version="1.1" creator="RetroLauncher">` → `<metadata>`
+     with start `<time>` → `<trk><name>Trip {id}</name><trkseg>` → ten
+     `<trkpt lat="…" lon="…">` each holding `<time>` (ISO-8601 UTC,
+     `yyyy-MM-dd'T'HH:mm:ss'Z'`) and `<extensions><gpxtpx:speed>…m/s…
+     </gpxtpx:speed></extensions>`. Speed lives inside `<extensions>`
+     because GPX 1.1 dropped the trkpt-level `<speed>` element; the schema's
+     `extensionsType` accepts any `##other`-namespaced child, so the doc
+     still validates against the topografix XSD (AC1) while carrying
+     per-point speed (AC2). Coords formatted `%.7f`, speeds `%.3f`,
+     `Locale.US` (so the decimal sep is always `.`).
+  2. **`data/trip/GpxExporter.kt`** — `class GpxExporter(context)` with
+     `suspend fun export(trip, points): Result` on `Dispatchers.IO`. Sealed
+     `Result.Success(uri, displayPath)` / `Result.PermissionDenied` /
+     `Result.IoFailure(throwable)`. On API ≥ 29 inserts into
+     `MediaStore.Downloads.EXTERNAL_CONTENT_URI` with
+     `RELATIVE_PATH = "Download/RetroLauncher"`. On API ≤ 28 writes to
+     `Environment.getExternalStoragePublicDirectory(DIRECTORY_DOWNLOADS)/RetroLauncher/`
+     and triggers `MediaScannerConnection.scanFile(…, "application/gpx+xml")`
+     so file managers / MediaStore pick it up (AC3). Catches
+     `SecurityException` → `PermissionDenied`, `IOException` → `IoFailure`.
+  3. **`ui/trips/TripDetailFragment.kt`** — adds an "Export GPX" `TextView`
+     in the top header (accent-orange, 8 dp padding). Click handler reads
+     current `TripDetailUiState.Loaded` from the VM, builds an exporter via
+     an injectable `exporterFactory` (test seam, `internal var`), launches
+     in `viewLifecycleOwner.lifecycleScope`, and maps the result to a
+     `Snackbar` (3 strings: success path, permission denied, generic
+     write failure) — never crashes (AC5).
+  4. **`res/layout/fragment_trip_detail.xml`** — new `@+id/trip_detail_export`
+     TextView inserted into the existing header LinearLayout, right of the
+     title.
+  5. **`res/values/strings.xml`** — `trip_detail_export_gpx` button label
+     and three Snackbar strings (`trip_detail_export_success_fmt`,
+     `trip_detail_export_permission_denied`, `trip_detail_export_failed`).
+  Tests added: **GpxXmlTest (6, Robolectric @sdk=28)** — exact-string
+  snapshot for a deterministic 10-point trip starting at
+  `2025-01-01T00:00:00Z` (AC4); DOM parse confirming well-formed XML +
+  root namespace/version/creator; regex check that 11 `<time>` and 10
+  `<gpxtpx:speed>` elements appear in document order; trip-id-in-name
+  assertion; empty-list still yields valid GPX (no trkpt elements);
+  7-decimal-place coord formatting using `Locale.US` `.` separator.
+  Verification: `:app:testStandardDebugUnitTest` → 360 tests, 0 failures
+  (was 354, +6 new); `xmllint --schema gpx-1.1.xsd sample.gpx` →
+  `sample.gpx validates` (AC1 confirmed against the upstream topografix
+  schema); `bpsai-pair arch check` clean on all 4 modified/new files.
+  Snackbar path exercised by the existing `SecurityException` catch and
+  `IOException` catch — could not be hit in unit tests without device IO,
+  manual verification deferred to instrumented run on the head unit.
 
 - **T1.39 done** (auto-updated by hook)
 
