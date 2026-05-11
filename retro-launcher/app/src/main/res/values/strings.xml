@@ -42,6 +42,10 @@
     <string name="trip_stat_avg_fmt">Avg %1$.0f %2$s</string>
     <string name="trip_detail_start_fmt">From: %1$s</string>
     <string name="trip_detail_end_fmt">To: %1$s</string>
+    <string name="trip_detail_export_gpx">Export GPX</string>
+    <string name="trip_detail_export_success_fmt">Saved to %1$s</string>
+    <string name="trip_detail_export_permission_denied">Storage permission denied — can\'t write GPX file</string>
+    <string name="trip_detail_export_failed">Couldn\'t save GPX file</string>
 
     <!-- Grid -->
     <string name="grid_pin_to_rail">Pin to rail</string>

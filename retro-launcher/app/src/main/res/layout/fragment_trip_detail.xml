@@ -36,6 +36,17 @@
             android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:id="@+id/trip_detail_export"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/trip_detail_export_gpx"
+            android:textColor="@color/accent"
+            android:textSize="14sp"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true" />
     </LinearLayout>
 
     <!-- Map fills the upper region -->

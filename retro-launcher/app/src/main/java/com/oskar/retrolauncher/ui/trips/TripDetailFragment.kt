@@ -7,9 +7,11 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.prefs.Units
+import com.oskar.retrolauncher.data.trip.GpxExporter
 import com.oskar.retrolauncher.data.trip.NominatimAddressCache
 import com.oskar.retrolauncher.data.trip.OsmdroidTilesConfig
 import com.oskar.retrolauncher.data.trip.TripEntity
@@ -45,6 +47,9 @@ class TripDetailFragment : Fragment(R.layout.fragment_trip_detail) {
 
     private lateinit var map: MapView
 
+    /** Override seam for tests — production builds a real Context-bound exporter. */
+    internal var exporterFactory: (android.content.Context) -> GpxExporter = { GpxExporter(it) }
+
     private val vm: TripDetailViewModel by viewModels {
         val args = requireArguments()
         val entity = TripEntity(
@@ -75,10 +80,34 @@ class TripDetailFragment : Fragment(R.layout.fragment_trip_detail) {
             parentFragmentManager.popBackStack()
         }
 
+        val exportBtn = view.findViewById<TextView>(R.id.trip_detail_export)
+        exportBtn.setOnClickListener { onExportClicked(view) }
+
         viewLifecycleOwner.lifecycleScope.launch {
             vm.state.collectLatest { state -> render(view, state) }
         }
         vm.load()
+    }
+
+    private fun onExportClicked(view: View) {
+        val state = vm.state.value as? TripDetailUiState.Loaded ?: return
+        val exporter = exporterFactory(requireContext().applicationContext)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = exporter.export(state.trip, state.points)
+            showExportResult(view, result)
+        }
+    }
+
+    private fun showExportResult(view: View, result: GpxExporter.Result) {
+        val msg = when (result) {
+            is GpxExporter.Result.Success ->
+                getString(R.string.trip_detail_export_success_fmt, result.displayPath)
+            GpxExporter.Result.PermissionDenied ->
+                getString(R.string.trip_detail_export_permission_denied)
+            is GpxExporter.Result.IoFailure ->
+                getString(R.string.trip_detail_export_failed)
+        }
+        Snackbar.make(view, msg, Snackbar.LENGTH_LONG).show()
     }
 
     override fun onResume() {
