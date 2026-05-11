@@ -102,6 +102,8 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
+- **T1.40 done** (auto-updated by hook)
+
 - **T1.40 done (2026-05-11)** — GPX export per trip. Pure `GpxXml` serializer +
   Context-bound `GpxExporter` write a GPX 1.1 file for any `TripEntity` +
   `List<TripPoint>` into a MediaStore-visible Downloads/RetroLauncher dir.
