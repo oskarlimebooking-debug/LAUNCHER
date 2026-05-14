@@ -2,6 +2,7 @@ package com.oskar.retrolauncher
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -11,11 +12,13 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.data.prefs.Theme
+import com.oskar.retrolauncher.service.MediaNotificationListenerHolder
 import com.oskar.retrolauncher.ui.home.HomeFragment
 import com.oskar.retrolauncher.ui.status.StatusBarFragment
 import com.oskar.retrolauncher.ui.wizard.WizardActivity
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
 
@@ -98,6 +101,54 @@ class MainActivity : AppCompatActivity() {
     @Suppress("DEPRECATION", "MissingSuperCall")
     override fun onBackPressed() {
         // No-op — staying on the home screen.
+    }
+
+    /**
+     * T1.43 — forward steering-wheel media keys to the active [MediaController].
+     *
+     * Transport keys (play/pause, next, prev, etc.) are dispatched via the
+     * controller's [android.media.session.MediaController.TransportControls].
+     * All other keys (including KEYCODE_HOME and volume) fall through to the
+     * system. Key events are logged in debug builds for troubleshooting (AC4).
+     */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (BuildConfig.DEBUG && event.action == KeyEvent.ACTION_DOWN) {
+            Timber.d("T1.43 key %s", KeyEvent.keyCodeToString(event.keyCode))
+        }
+
+        val ctrl = MediaNotificationListenerHolder.instance?.controller()
+        if (ctrl != null && event.action == KeyEvent.ACTION_DOWN) {
+            when (event.keyCode) {
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                KeyEvent.KEYCODE_MEDIA_PLAY -> ctrl.transportControls.play()
+                KeyEvent.KEYCODE_MEDIA_PAUSE -> ctrl.transportControls.pause()
+                KeyEvent.KEYCODE_MEDIA_NEXT -> ctrl.transportControls.skipToNext()
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> ctrl.transportControls.skipToPrevious()
+                KeyEvent.KEYCODE_MEDIA_STOP -> ctrl.transportControls.stop()
+                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> ctrl.transportControls.fastForward()
+                KeyEvent.KEYCODE_MEDIA_REWIND -> ctrl.transportControls.rewind()
+                else -> return super.dispatchKeyEvent(event)
+            }
+            return true
+        }
+
+        // AC1: consume transport keys even without a controller so the system
+        // doesn't start its own default media player.
+        if (isMediaTransportKey(event.keyCode)) return true
+
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun isMediaTransportKey(keyCode: Int): Boolean = when (keyCode) {
+        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        KeyEvent.KEYCODE_MEDIA_PLAY,
+        KeyEvent.KEYCODE_MEDIA_PAUSE,
+        KeyEvent.KEYCODE_MEDIA_NEXT,
+        KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+        KeyEvent.KEYCODE_MEDIA_STOP,
+        KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+        KeyEvent.KEYCODE_MEDIA_REWIND -> true
+        else -> false
     }
 
     private fun applyPanelRatio(leftPct: Int) {
