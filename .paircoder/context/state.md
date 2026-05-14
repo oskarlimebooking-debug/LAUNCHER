@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.5 — icon task file status synced from pending to done; all 4 ACs verified on disk)
+> Last updated: 2026-05-14 (T1.41 — verified all ACs against on-disk implementation; drag-to-reorder was already complete)
 
 ## Active Plan
 
@@ -102,6 +102,16 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.41 verified (2026-05-14)** — Drag-to-reorder was already fully implemented
+  on disk by commit 0628b0d. Verified all 5 ACs: (1) DragReorderCallback.applyLift
+  provides haptic + visual lift (scale 1.08x, elevation 12f, alpha 0.92, 120ms
+  duration). (2) Drop commits new order via commitGridOrder/commitPinnedOrder to
+  SettingsStore. (3) Grid uses manual drag from popup menu (longPress=false);
+  rail uses default long-press (longPress=true). (4) Order survives restart
+  (SharedPreferences + Moshi serialization, tested in AppListRepositoryReorderTest).
+  (5) Bounds-safe — onMove checks NO_POSITION, moveItem validates list indices.
+  7 unit tests cover both commit paths and cross-instance persistence.
 
 - **T1.5 done** (auto-updated by hook)
 
