@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-11 (T1.40 done — GPX export per trip with MediaStore-visible writer + Snackbar feedback)
+> Last updated: 2026-05-14 (T1.41 done — drag-to-reorder for app grid + rail with haptic, visual lift, and persistence)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 40/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39, T1.40 done).
-T1.41 (next pending — Phase 10, P2 Cx 8).
+**Status:** 41/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39–T1.41 done).
+T1.42 (next pending — Phase 10, P2 Cx 5).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -83,17 +83,18 @@ Phase 9 — Testing and build (4/4 done)
 - ✓ T1.37 Manual test matrix doc (done 2026-05-11)
 - ✓ T1.38 Build and install scripts for rooted HU (done 2026-05-11)
 
-Phase 10 — v0.2 polish (2/5 done)
+Phase 10 — v0.2 polish (3/5 done)
 - ✓ T1.39 Trip detail screen with offline mini-map (done 2026-05-11)
 - ✓ T1.40 GPX export per trip (done 2026-05-11)
-- ⏳ T1.41–T1.43 (all P2, Cx 8/5/5)
+- ✓ T1.41 App rail drag-to-reorder (done 2026-05-14)
+- ⏳ T1.42–T1.43 (all P2, Cx 5/5)
 
 Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–9 done + T1.39, T1.40 (40/49). Continue with `/start-task T1.41`
-(Phase 10, P2 Cx 8).
+Phases 1–9 done + T1.39, T1.40, T1.41 (41/49). Continue with `/start-task T1.42`
+(Phase 10, P2 Cx 5).
 
 ### Backlog
 
@@ -102,7 +103,13 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
 
-- **T1.40 done** (auto-updated by hook)
+- **T1.41 done (2026-05-14)** — App grid + rail drag-to-reorder. `DragReorderCallback`
+  wraps `ItemTouchHelper` with haptic + visual lift (scale/elevation/alpha), bounds-safe
+  index swaps, and dual activation modes: grid uses "Reorder" popup menu entry (avoids
+  conflict with pin/unpin long-press), rail uses default long-press drag. `commitGridOrder`
+  and `commitPinnedOrder` on `AppListRepository` persist the new order to
+  `SettingsStore.appOrder` / `pinnedApps`. 6 unit tests verify commit paths and persistence
+  across fresh repo instances. All 5 ACs pass.
 
 - **T1.40 done (2026-05-11)** — GPX export per trip. Pure `GpxXml` serializer +
   Context-bound `GpxExporter` write a GPX 1.1 file for any `TripEntity` +
