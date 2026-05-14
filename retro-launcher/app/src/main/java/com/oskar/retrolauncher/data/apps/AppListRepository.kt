@@ -116,6 +116,27 @@ class AppListRepository(
 
     fun isPinned(packageName: String): Boolean = packageName in _pinnedPackages.value
 
+    /**
+     * T1.41 — commit a user-reordered grid. The list comes from the drag-and-
+     * drop callback after a drop; its componentName-keys are persisted to
+     * `SettingsStore.appOrder` and the `all` StateFlow is re-emitted in the
+     * new order so the adapter's next submitList is a DiffUtil no-op.
+     */
+    fun commitGridOrder(entries: List<AppEntry>) {
+        settings.setAppOrder(entries.map { it.componentName.flattenToShortString() })
+        _all.value = entries
+        _rail.value = resolveRail(_pinnedPackages.value, entries)
+    }
+
+    /**
+     * T1.41 — commit a user-reordered rail. Packages are persisted to
+     * `SettingsStore.pinnedApps`; `pinnedPackages` and `rail` are refreshed
+     * from the latest scan.
+     */
+    fun commitPinnedOrder(packages: List<String>) {
+        savePinned(packages)
+    }
+
     private fun savePinned(packages: List<String>) {
         settings.setPinnedApps(packages)
         _pinnedPackages.value = packages

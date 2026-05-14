@@ -107,6 +107,10 @@ class SettingsStore(
     val weatherLat: Float? get() = readNullableFloat(KEY_WEATHER_LAT)
     val weatherLon: Float? get() = readNullableFloat(KEY_WEATHER_LON)
 
+    /** Effective weather coords: user override if set, else the Ljubljana default. */
+    val effectiveWeatherLat: Float get() = weatherLat ?: DEFAULT_WEATHER_LAT
+    val effectiveWeatherLon: Float get() = weatherLon ?: DEFAULT_WEATHER_LON
+
     fun setWeatherLocation(lat: Float?, lon: Float?) {
         prefs.edit().apply {
             if (lat == null) remove(KEY_WEATHER_LAT) else putFloat(KEY_WEATHER_LAT, lat)
@@ -243,6 +247,10 @@ class SettingsStore(
 
         /** Hard cap on rail entries (T1.30 AC1 / AC3). */
         const val MAX_PINNED = 8
+
+        /** Default weather coordinates when no override and no GPS fix — Ljubljana, Slovenia. */
+        const val DEFAULT_WEATHER_LAT = 46.0569f
+        const val DEFAULT_WEATHER_LON = 14.5058f
 
         private val defaultMoshi: Moshi by lazy {
             Moshi.Builder().add(KotlinJsonAdapterFactory()).build()

@@ -51,6 +51,7 @@
     <string name="grid_pin_to_rail">Pin to rail</string>
     <string name="grid_unpin">Unpin</string>
     <string name="grid_app_info">App info</string>
+    <string name="grid_reorder">Reorder</string>
 
     <!-- Wizard -->
     <string name="wizard_welcome_title">Welcome</string>
@@ -67,7 +68,7 @@
     <string name="wizard_owm_validating">Checking key…</string>
     <string name="wizard_owm_invalid">Key didn\'t work — check it or skip.</string>
     <string name="wizard_home_title">Home location</string>
-    <string name="wizard_home_body">Optional lat/lon used by the weather card. Leave blank to fall back to device GPS.</string>
+    <string name="wizard_home_body">Optional lat/lon used by the weather card. Leave blank to use device GPS, with Ljubljana as the fallback.</string>
     <string name="wizard_home_lat_hint">Latitude</string>
     <string name="wizard_home_lon_hint">Longitude</string>
     <string name="wizard_grant">Grant</string>

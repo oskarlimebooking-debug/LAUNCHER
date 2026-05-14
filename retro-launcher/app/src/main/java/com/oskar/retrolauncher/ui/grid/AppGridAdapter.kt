@@ -31,6 +31,16 @@ class AppGridAdapter(
         holder.itemView.setOnLongClickListener { onLongClick(item, holder.itemView) }
     }
 
+    /** T1.41 — apply a single drag-step swap; submitList lets DiffUtil drive notifyItemMoved. */
+    fun moveItem(from: Int, to: Int) {
+        val list = currentList.toMutableList()
+        if (from !in list.indices || to !in list.indices || from == to) return
+        list.add(to, list.removeAt(from))
+        submitList(list)
+    }
+
+    fun currentEntries(): List<AppEntry> = currentList.toList()
+
     override fun onViewRecycled(holder: VH) {
         Glide.with(holder.icon).clear(holder.icon)
         super.onViewRecycled(holder)

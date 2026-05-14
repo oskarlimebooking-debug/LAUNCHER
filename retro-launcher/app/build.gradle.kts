@@ -24,8 +24,11 @@ android {
         // so instrumented fragment tests never touch real network or sensors.
         testInstrumentationRunner = "com.oskar.retrolauncher.test.RetroTestRunner"
 
-        // OpenWeather API key from local.properties — never commit
-        val owmKey = project.findProperty("OWM_API_KEY")?.toString().orEmpty()
+        // OpenWeather API key. Defaults to the owner's personal key so unsigned
+        // builds work out of the box; can still be overridden via local.properties.
+        val owmKey = project.findProperty("OWM_API_KEY")?.toString()
+            ?.takeIf { it.isNotBlank() }
+            ?: "75306edb5e7e9293ed55f94f578db406"
         buildConfigField("String", "OWM_API_KEY", "\"$owmKey\"")
 
         vectorDrawables.useSupportLibrary = true
