@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.41 done — drag-to-reorder for app grid + rail with haptic, visual lift, and persistence)
+> Last updated: 2026-05-14 (T1.3 verified — manifest ACs confirmed, status synced from failed to done)
 
 ## Active Plan
 
@@ -102,6 +102,17 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.3 done** (auto-updated by hook)
+
+- **T1.3 done (2026-05-14)** — Verified existing AndroidManifest.xml against all 5 ACs.
+  MainActivity has HOME + DEFAULT categories (launcher intent filter).
+  MediaNotificationListener declares BIND_NOTIFICATION_LISTENER_SERVICE permission
+  with NotificationListenerService intent filter. LocationService has no
+  foregroundServiceType (targetSdk=28). Theme is @style/Theme.RetroLauncher with
+  screenOrientation=landscape. All permissions declared per spec. Task file status
+  synced from failed to done — the engage run had authored the manifest but marked
+  the task as failed due to "no meaningful output" despite all ACs being checked.
 
 - **T1.41 done (2026-05-14)** — App grid + rail drag-to-reorder. `DragReorderCallback`
   wraps `ItemTouchHelper` with haptic + visual lift (scale/elevation/alpha), bounds-safe
