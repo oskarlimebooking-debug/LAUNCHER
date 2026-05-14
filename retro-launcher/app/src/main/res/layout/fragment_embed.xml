@@ -4,6 +4,14 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_tile">
 
+    <!-- VirtualDisplay rendering surface (system flavor) -->
+    <TextureView
+        android:id="@+id/embed_texture"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+    <!-- Fallback for standard flavor and before VirtualDisplay is ready -->
     <TextView
         android:id="@+id/embed_placeholder"
         android:layout_width="wrap_content"

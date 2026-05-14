@@ -4,6 +4,7 @@
 
     <!-- Embed surface placeholder (root-only feature ships in v0.3) -->
     <string name="embed_v03_placeholder">Map\n\nEmbedding lands in v0.3</string>
+    <string name="embedding_unavailable">Embedding unavailable</string>
 
     <!-- Status bar -->
     <string name="status_drawer_cd">App drawer</string>

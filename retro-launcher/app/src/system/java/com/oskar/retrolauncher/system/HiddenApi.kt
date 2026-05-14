@@ -156,6 +156,23 @@ object HiddenApi {
     }
 
     /**
+     * Injects a [MotionEvent] targeting a specific display.
+     *
+     * Attempts to set the display ID on the event via [MotionEvent.setDisplayId]
+     * (added in API 28) before forwarding to [injectInputEvent].
+     * On API 23–27 the display ID is silently ignored.
+     */
+    fun injectInputEvent(event: MotionEvent, displayId: Int): Boolean {
+        try {
+            MotionEvent::class.java.getMethod("setDisplayId", Int::class.javaPrimitiveType!!)
+                .invoke(event, displayId)
+        } catch (_: Exception) {
+            // setDisplayId is API 28+; no-op on earlier versions
+        }
+        return injectInputEvent(event)
+    }
+
+    /**
      * Returns the list of recent tasks via the hidden
      * [android.app.ActivityManagerNative] class.
      */
