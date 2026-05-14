@@ -36,8 +36,6 @@ android {
 
     signingConfigs {
         create("platform") {
-            // Placeholder: real keystore lands in T1.44 (system-build embedding).
-            // Lazy-attach so a missing file doesn't fail config of other variants.
             val keystoreFile = rootProject.file("platform.keystore")
             if (keystoreFile.exists()) {
                 storeFile = keystoreFile
@@ -48,19 +46,46 @@ android {
         }
     }
 
+    // T1.44 — system flavor is gated on the platform keystore. Without it
+    // we skip the system source set so standard flavour builds are unaffected.
+    val platformKeystore = rootProject.file("platform.keystore")
+    val systemSourceSetEnabled = platformKeystore.exists()
+
     flavorDimensions += "build"
     productFlavors {
         create("standard") {
             dimension = "build"
-            // No system uid, no embedding. v0.1 ships this flavor.
             buildConfigField("boolean", "ENABLE_EMBEDDING", "false")
         }
         create("system") {
             dimension = "build"
-            // Reserved for v0.3. Manifest merges sharedUserId placeholder.
             buildConfigField("boolean", "ENABLE_EMBEDDING", "true")
-            signingConfig = signingConfigs.getByName("platform")
+            if (systemSourceSetEnabled) {
+                signingConfig = signingConfigs.getByName("platform")
+            }
         }
+    }
+
+    sourceSets {
+        named("system") {
+            if (!systemSourceSetEnabled) {
+                // AC2: when the keystore is missing, exclude the system source
+                // set so platform-only code is never compiled.
+                java.setSrcDirs(emptyList<String>())
+            }
+        }
+    }
+
+    if (!systemSourceSetEnabled && gradle.startParameter.taskNames.any {
+            it.contains("assembleSystem") || it.contains("bundleSystem")
+        }) {
+        logger.warn(
+            "╔══════════════════════════════════════════════════════════════╗\n" +
+            "║  platform.keystore not found — system flavor skipped.        ║\n" +
+            "║  See docs/platform-signing.md to provision the keystore.     ║\n" +
+            "║  The standard flavor builds normally without it.             ║\n" +
+            "╚══════════════════════════════════════════════════════════════╝"
+        )
     }
 
     buildFeatures {

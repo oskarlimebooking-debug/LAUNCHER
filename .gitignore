@@ -5,6 +5,13 @@ agent_pack.tgz
 *.bak
 .DS_Store
 
+# Platform signing keys — never commit (T1.44)
+platform.keystore
+platform.p12
+platform.pk8
+platform.key
+platform.x509.pem
+
 # Reference APKs (Mini AA) — large binaries, not source
 *.apk
 *.aab

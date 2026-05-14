@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.43 done — steering-wheel media key forwarding via dispatchKeyEvent)
+> Last updated: 2026-05-14 (T1.44 done — system flavor scaffolding, platform signing config, docs)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 43/49 tasks done (Phase 9 complete; Phase 10 complete: T1.39–T1.43 done).
-T1.44 (next pending — Phase 11, P2 Cx 8).
+**Status:** 44/49 tasks done (Phases 1–10 complete; Phase 11 in progress: T1.44 done).
+T1.45 (next pending — Phase 11, P2 Cx 13).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -90,12 +90,13 @@ Phase 10 — v0.2 polish (5/5 done)
 - ✓ T1.42 Day/night theme variants (done 2026-05-14)
 - ✓ T1.43 Steering-wheel media key support (done 2026-05-14)
 
-Phase 11 — v0.3 system-build features (0/6 pending)
-- ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
+Phase 11 — v0.3 system-build features (1/6 done)
+- ✓ T1.44 System flavor scaffolding + platform signing (done 2026-05-14)
+- ⏳ T1.45–T1.49 (all P2, Cx 13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–10 done (43/49). Continue with `/start-task T1.44`
-(Phase 11, P2 Cx 8).
+Phases 1–10 done + T1.44 (44/49). Continue with `/start-task T1.45`
+(Phase 11, P2 Cx 13).
 
 ### Backlog
 
@@ -103,6 +104,15 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.44 done (2026-05-14)** — System flavor scaffolding + platform signing.
+  Created `app/src/system/` source set with platform-only AndroidManifest
+  (INJECT_EVENTS, WRITE_SECURE_SETTINGS, sharedUserId=android.uid.system).
+  `build.gradle.kts` conditionally enables system source set + platform signing
+  when `platform.keystore` exists; prints a clear warning and skips it when
+  absent. `docs/platform-signing.md` documents ROM extraction, key conversion,
+  and keystore provisioning. `.gitignore` covers all intermediate key files.
+  Standard flavor verified unaffected.
 
 - **T1.43 done (2026-05-14)** — Steering-wheel media key support. `MainActivity.
   dispatchKeyEvent` intercepts KEYCODE_MEDIA_PLAY_PAUSE/NEXT/PREVIOUS/STOP/
