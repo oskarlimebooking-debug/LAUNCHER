@@ -16,6 +16,9 @@ import android.view.MotionEvent
 object HiddenApi {
     private const val TAG = "HiddenApi"
 
+    /** 0 = wait for finish; 1 = wait for result; 2 = async. We use 2. */
+    private const val INJECT_INPUT_EVENT_MODE_ASYNC = 2
+
     // -- Injectable ClassProvider (swapped in tests) -----------------------
 
     internal var classProvider: ClassProvider = RealClassProvider
@@ -147,7 +150,7 @@ object HiddenApi {
             ) ?: return false.also {
                 Log.w(TAG, "injectInputEvent method not found")
             }
-            injectMethod.invoke(inputManager, event, 0)
+            injectMethod.invoke(inputManager, event, INJECT_INPUT_EVENT_MODE_ASYNC)
             true
         } catch (e: Exception) {
             Log.w(TAG, "Failed to inject input event", e)

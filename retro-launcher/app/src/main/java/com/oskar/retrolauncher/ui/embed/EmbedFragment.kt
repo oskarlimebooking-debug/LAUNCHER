@@ -74,6 +74,11 @@ class EmbedFragment : Fragment(R.layout.fragment_embed) {
         placeholderView?.visibility = View.GONE
         tv.visibility = View.VISIBLE
 
+        tv.setOnTouchListener { _, event ->
+            forwardEmbeddedTouch(event)
+            true
+        }
+
         tv.post {
             emb.bind(tv, tv.width.let { if (it > 0) it else rightPanelWidth },
                 tv.height.let { if (it > 0) it else rightPanelHeight }, virtualDpi)

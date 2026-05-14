@@ -87,13 +87,43 @@ class Embedding(private val ctx: Context) : EmbeddingContract {
     override fun forwardTouch(
         ev: MotionEvent, viewW: Int, viewH: Int, dispW: Int, dispH: Int,
     ) {
-        val x = ev.x * dispW / viewW.coerceAtLeast(1)
-        val y = ev.y * dispH / viewH.coerceAtLeast(1)
-        val mapped = MotionEvent.obtain(
-            ev.downTime, ev.eventTime, ev.action, x, y, ev.metaState,
-        )
+        val safeW = viewW.coerceAtLeast(1)
+        val safeH = viewH.coerceAtLeast(1)
+        val displayId = virtualDisplay?.display?.displayId ?: 0
+
+        val mapped = if (ev.pointerCount <= 1) {
+            val x = ev.x * dispW / safeW
+            val y = ev.y * dispH / safeH
+            MotionEvent.obtain(
+                ev.downTime, ev.eventTime, ev.action, x, y, ev.metaState,
+            )
+        } else {
+            val pointerCount = ev.pointerCount
+            val props = Array(pointerCount) { i ->
+                MotionEvent.PointerProperties().also {
+                    it.id = ev.getPointerId(i)
+                    it.toolType = ev.getToolType(i)
+                }
+            }
+            val coords = Array(pointerCount) { i ->
+                MotionEvent.PointerCoords().also {
+                    it.x = ev.getX(i) * dispW / safeW
+                    it.y = ev.getY(i) * dispH / safeH
+                    it.pressure = ev.getPressure(i)
+                    it.size = ev.getSize(i)
+                }
+            }
+            MotionEvent.obtain(
+                ev.downTime, ev.eventTime, ev.action,
+                pointerCount, props, coords,
+                ev.metaState, ev.buttonState,
+                ev.xPrecision, ev.yPrecision,
+                ev.deviceId, ev.edgeFlags,
+                InputDevice.SOURCE_TOUCHSCREEN, ev.flags,
+            )
+        }
         mapped.source = InputDevice.SOURCE_TOUCHSCREEN
-        HiddenApi.injectInputEvent(mapped, virtualDisplay?.display?.displayId ?: 0)
+        HiddenApi.injectInputEvent(mapped, displayId)
         mapped.recycle()
     }
 }
