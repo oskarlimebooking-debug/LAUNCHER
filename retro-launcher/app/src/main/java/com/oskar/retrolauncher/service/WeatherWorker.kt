@@ -26,8 +26,22 @@ import java.util.concurrent.TimeUnit
  *   - any other      → [Result.failure] (parse error, 4xx — retrying won't help)
  */
 class WeatherWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
-    override suspend fun doWork(): Result =
-        runWeatherRefresh(App.weather, App.location)
+    override suspend fun doWork(): Result {
+        if (!App.weather.isConfigured) {
+            Timber.w("WeatherWorker: OWM_API_KEY missing — returning failure")
+            return Result.failure()
+        }
+        val settings = App.settings
+        val loc = App.location.lastKnown()
+        val lat = loc?.latitude ?: settings.effectiveWeatherLat.toDouble()
+        val lon = loc?.longitude ?: settings.effectiveWeatherLon.toDouble()
+        val outcome = App.weather.refresh(lat, lon)
+        return when {
+            outcome.isSuccess -> Result.success()
+            outcome.exceptionOrNull() is IOException -> Result.retry()
+            else -> Result.failure()
+        }
+    }
 
     companion object {
         const val WORK_NAME = "weather"

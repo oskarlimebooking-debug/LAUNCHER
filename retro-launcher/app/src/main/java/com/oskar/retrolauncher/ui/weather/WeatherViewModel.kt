@@ -18,12 +18,13 @@ class WeatherViewModel : ViewModel() {
         viewModelScope.launch {
             App.weather.state.collect { _state.value = it }
         }
-        // Trigger an immediate refresh on first GPS fix
         viewModelScope.launch {
             App.location.last.combine(App.weather.state) { loc, _ -> loc }.collect { loc ->
-                if (loc != null && shouldRefresh(_state.value)) {
-                    App.weather.refresh(loc.lat, loc.lon)
-                }
+                if (!shouldRefresh(_state.value)) return@collect
+                val settings = App.settings
+                val lat = loc?.lat ?: settings.effectiveWeatherLat.toDouble()
+                val lon = loc?.lon ?: settings.effectiveWeatherLon.toDouble()
+                App.weather.refresh(lat, lon)
             }
         }
     }
