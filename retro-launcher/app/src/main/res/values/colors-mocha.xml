@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mocha — warm earth tones, reminiscent of coffee / caramel dashboards -->
+    <color name="mocha_bg">#1A1410</color>
+    <color name="mocha_card">#2C2018</color>
+    <color name="mocha_card_alt">#3A2A20</color>
+    <color name="mocha_divider">#4A3828</color>
+
+    <color name="mocha_accent">#D4A574</color>
+    <color name="mocha_accent_dim">#9E7B5A</color>
+
+    <color name="mocha_text_primary">#F5F0EB</color>
+    <color name="mocha_text_secondary">#C4B8A8</color>
+    <color name="mocha_text_tertiary">#8A7C6E</color>
+    <color name="mocha_text_disabled">#5A5045</color>
+
+    <color name="mocha_track">#2C2018</color>
+    <color name="mocha_warn">#FFC107</color>
+    <color name="mocha_err">#FF5252</color>
+    <color name="mocha_ok">#3DDC84</color>
+</resources>

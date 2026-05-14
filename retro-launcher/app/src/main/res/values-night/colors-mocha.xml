@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mocha night — slightly dimmer than day, keeping the warm brown palette -->
+    <color name="mocha_bg">#120D0A</color>
+    <color name="mocha_card">#1E1610</color>
+    <color name="mocha_card_alt">#2A1E16</color>
+    <color name="mocha_divider">#382A1E</color>
+
+    <color name="mocha_accent">#C09560</color>
+    <color name="mocha_accent_dim">#8A6B44</color>
+
+    <color name="mocha_text_primary">#E8E0D6</color>
+    <color name="mocha_text_secondary">#B0A090</color>
+    <color name="mocha_text_tertiary">#786A58</color>
+    <color name="mocha_text_disabled">#4A4038</color>
+
+    <color name="mocha_track">#1E1610</color>
+    <color name="mocha_warn">#E6AE06</color>
+    <color name="mocha_err">#E64949</color>
+    <color name="mocha_ok">#37C87B</color>
+</resources>

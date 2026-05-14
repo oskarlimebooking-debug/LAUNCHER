@@ -1,12 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.41 — verified all ACs against on-disk implementation; drag-to-reorder was already complete)
+> Last updated: 2026-05-14 (T1.42 done — 3 new color themes Mocha/Ocean/Forest, activity recreate, auto night mode, theme-aware speedometer)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 41/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39–T1.41 done).
-T1.42 (next pending — Phase 10, P2 Cx 5).
+**Status:** 42/49 tasks done (Phase 9 complete; Phase 10 in progress: T1.39–T1.42 done).
+T1.43 (next pending — Phase 10, P2 Cx 5).
 **Current Sprint:** 1 (T1.x)
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
@@ -83,17 +83,18 @@ Phase 9 — Testing and build (4/4 done)
 - ✓ T1.37 Manual test matrix doc (done 2026-05-11)
 - ✓ T1.38 Build and install scripts for rooted HU (done 2026-05-11)
 
-Phase 10 — v0.2 polish (3/5 done)
+Phase 10 — v0.2 polish (4/5 done)
 - ✓ T1.39 Trip detail screen with offline mini-map (done 2026-05-11)
 - ✓ T1.40 GPX export per trip (done 2026-05-11)
 - ✓ T1.41 App rail drag-to-reorder (done 2026-05-14)
-- ⏳ T1.42–T1.43 (all P2, Cx 5/5)
+- ✓ T1.42 Day/night theme variants (done 2026-05-14)
+- ⏳ T1.43 (P2, Cx 5)
 
 Phase 11 — v0.3 system-build features (0/6 pending)
 - ⏳ T1.44–T1.49 (all P2, Cx 8/13/21/13/8/8)
 
 All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–9 done + T1.39, T1.40, T1.41 (41/49). Continue with `/start-task T1.42`
+Phases 1–9 done + T1.39–T1.42 (42/49). Continue with `/start-task T1.43`
 (Phase 10, P2 Cx 5).
 
 ### Backlog
@@ -102,6 +103,14 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.42 done (2026-05-14)** — Day/night theme variants. Added Mocha/Ocean/Forest
+  color palettes (day + night `colors-{theme}.xml` files). Extended `Theme` enum
+  with `styleRes`. `MainActivity.setTheme()` + `AppCompatDelegate` night mode.
+  Activity auto-recreates on theme change. SpeedometerView now uses `R.color.ok`/
+  `warn`/`err` for theme-aware thresholds. 13 tests pass.
+
+- **T1.41 done** (auto-updated by hook)
 
 - **T1.41 verified (2026-05-14)** — Drag-to-reorder was already fully implemented
   on disk by commit 0628b0d. Verified all 5 ACs: (1) DragReorderCallback.applyLift

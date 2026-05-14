@@ -4,21 +4,41 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.oskar.retrolauncher.data.prefs.SettingsStore
+import com.oskar.retrolauncher.data.prefs.Theme
 import com.oskar.retrolauncher.ui.home.HomeFragment
 import com.oskar.retrolauncher.ui.status.StatusBarFragment
 import com.oskar.retrolauncher.ui.wizard.WizardActivity
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var root: ConstraintLayout
+    private var appliedTheme: Theme = Theme.SYSTEM
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // T1.42 — apply the persisted theme before super.onCreate so every
+        // fragment and view inflates with the correct styled attributes.
+        appliedTheme = App.settings.theme
+        setTheme(appliedTheme.styleRes)
+
+        // AC3: day/night auto-switch. SYSTEM follows time-of-day; LIGHT forces
+        // light; all others (DARK, MOCHA, OCEAN, FOREST) keep night mode since
+        // the launcher's palette variants are designed for a dark cabin.
+        AppCompatDelegate.setDefaultNightMode(
+            when (appliedTheme) {
+                Theme.SYSTEM -> AppCompatDelegate.MODE_NIGHT_AUTO_TIME
+                Theme.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                else -> AppCompatDelegate.MODE_NIGHT_YES
+            }
+        )
+
         super.onCreate(savedInstanceState)
         // Edge-to-edge: the launcher draws under the system bars on the head unit.
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -47,6 +67,16 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             App.settings.changes(SettingsStore.KEY_PANEL_RATIO).collect {
                 applyPanelRatio(App.settings.panelRatioPercent)
+            }
+        }
+        // AC2 — when the user picks a different theme in Settings, recreate
+        // so all fragments re-render with the new styled attributes without
+        // requiring a manual app restart.
+        lifecycleScope.launch {
+            App.settings.themeFlow.drop(1).collect { newTheme ->
+                if (newTheme != appliedTheme) {
+                    recreate()
+                }
             }
         }
     }

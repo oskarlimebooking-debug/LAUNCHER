@@ -45,6 +45,10 @@ class SpeedometerView @JvmOverloads constructor(
 
     private var animator: ValueAnimator? = null
 
+    private val okColor: Int by lazy { ContextCompat.getColor(context, R.color.ok) }
+    private val warnColor: Int by lazy { ContextCompat.getColor(context, R.color.warn) }
+    private val errColor: Int by lazy { ContextCompat.getColor(context, R.color.err) }
+
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
@@ -54,7 +58,7 @@ class SpeedometerView @JvmOverloads constructor(
     private val arcPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
-        color = COLOR_GREEN
+        color = ContextCompat.getColor(context, R.color.ok)
     }
 
     private val speedPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -128,11 +132,13 @@ class SpeedometerView @JvmOverloads constructor(
         canvas.drawText(label, cx, cy + speedPaint.textSize * 0.55f, unitPaint)
     }
 
+    // AC5 — speed threshold colors are now loaded from @color/ok, @color/warn,
+    // @color/err so they remain readable when the active theme changes.
     @VisibleForTesting
     internal fun arcColorAt(kmh: Float): Int {
         val t = (kmh / thresholdKmh.coerceAtLeast(1f)).coerceIn(0f, 2f)
-        return if (t < 1f) lerpColor(COLOR_GREEN, COLOR_YELLOW, t)
-        else lerpColor(COLOR_YELLOW, COLOR_RED, t - 1f)
+        return if (t < 1f) lerpColor(okColor, warnColor, t)
+        else lerpColor(warnColor, errColor, t - 1f)
     }
 
     private fun lerpColor(from: Int, to: Int, t: Float): Int = Color.argb(
@@ -154,8 +160,5 @@ class SpeedometerView @JvmOverloads constructor(
         private const val ARC_START_DEG = 135f
         private const val ARC_SWEEP_DEG = 270f
         private const val MPH_PER_KMH = 0.621371f
-        private val COLOR_GREEN = Color.rgb(0x3D, 0xDC, 0x84)
-        private val COLOR_YELLOW = Color.rgb(0xFF, 0xC1, 0x07)
-        private val COLOR_RED = Color.rgb(0xFF, 0x52, 0x52)
     }
 }

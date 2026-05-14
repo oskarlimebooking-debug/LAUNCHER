@@ -1,6 +1,7 @@
 package com.oskar.retrolauncher.data.prefs
 
 import android.content.SharedPreferences
+import com.oskar.retrolauncher.R
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -16,7 +17,14 @@ enum class TempUnit { CELSIUS, FAHRENHEIT }
 
 enum class SpeedUnit { METERS_PER_SECOND, KILOMETERS_PER_HOUR, MILES_PER_HOUR }
 
-enum class Theme { SYSTEM, LIGHT, DARK }
+enum class Theme(val styleRes: Int) {
+    SYSTEM(R.style.Theme_RetroLauncher),
+    MOCHA(R.style.Theme_RetroLauncher_Mocha),
+    OCEAN(R.style.Theme_RetroLauncher_Ocean),
+    FOREST(R.style.Theme_RetroLauncher_Forest),
+    LIGHT(R.style.Theme_RetroLauncher),
+    DARK(R.style.Theme_RetroLauncher);
+}
 
 /**
  * Typed wrapper around the app's default [SharedPreferences]. Per T1.31 every
@@ -136,14 +144,20 @@ class SettingsStore(
         get() = when (prefs.getString(KEY_THEME, "system")) {
             "light" -> Theme.LIGHT
             "dark" -> Theme.DARK
+            "mocha" -> Theme.MOCHA
+            "ocean" -> Theme.OCEAN
+            "forest" -> Theme.FOREST
             else -> Theme.SYSTEM
         }
 
     fun setTheme(theme: Theme) {
         val value = when (theme) {
+            Theme.SYSTEM -> "system"
             Theme.LIGHT -> "light"
             Theme.DARK -> "dark"
-            Theme.SYSTEM -> "system"
+            Theme.MOCHA -> "mocha"
+            Theme.OCEAN -> "ocean"
+            Theme.FOREST -> "forest"
         }
         prefs.edit().putString(KEY_THEME, value).apply()
     }

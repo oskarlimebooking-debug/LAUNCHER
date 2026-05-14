@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ocean night — deeper navy, reduced luminance for night driving -->
+    <color name="ocean_bg">#06101E</color>
+    <color name="ocean_card">#0E1A2E</color>
+    <color name="ocean_card_alt">#14253E</color>
+    <color name="ocean_divider">#1C3050</color>
+
+    <color name="ocean_accent">#00A8BF</color>
+    <color name="ocean_accent_dim">#007A8E</color>
+
+    <color name="ocean_text_primary">#C8E0F0</color>
+    <color name="ocean_text_secondary">#88B0D0</color>
+    <color name="ocean_text_tertiary">#507090</color>
+    <color name="ocean_text_disabled">#2A4460</color>
+
+    <color name="ocean_track">#0E1A2E</color>
+    <color name="ocean_warn">#F0A73A</color>
+    <color name="ocean_err">#D94848</color>
+    <color name="ocean_ok">#47A34B</color>
+</resources>

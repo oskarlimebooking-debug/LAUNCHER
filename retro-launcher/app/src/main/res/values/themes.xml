@@ -30,4 +30,67 @@
         <item name="preferenceCategoryTitleTextColor">@color/accent</item>
     </style>
 
+    <!-- Mocha — warm earth tones -->
+    <style name="Theme.RetroLauncher.Mocha" parent="Theme.RetroLauncher">
+        <item name="colorPrimary">@color/mocha_accent</item>
+        <item name="colorOnPrimary">@color/mocha_text_primary</item>
+        <item name="colorSurface">@color/mocha_card</item>
+        <item name="colorOnSurface">@color/mocha_text_primary</item>
+        <item name="android:colorBackground">@color/mocha_bg</item>
+        <item name="android:windowBackground">@color/mocha_bg</item>
+        <item name="android:textColorPrimary">@color/mocha_text_primary</item>
+        <item name="android:textColorSecondary">@color/mocha_text_secondary</item>
+        <item name="android:statusBarColor">@color/mocha_bg</item>
+        <item name="android:navigationBarColor">@color/mocha_bg</item>
+    </style>
+
+    <style name="Theme.RetroLauncher.Mocha.Home" parent="Theme.RetroLauncher.Mocha">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <!-- Ocean — deep navy / teal -->
+    <style name="Theme.RetroLauncher.Ocean" parent="Theme.RetroLauncher">
+        <item name="colorPrimary">@color/ocean_accent</item>
+        <item name="colorOnPrimary">@color/ocean_text_primary</item>
+        <item name="colorSurface">@color/ocean_card</item>
+        <item name="colorOnSurface">@color/ocean_text_primary</item>
+        <item name="android:colorBackground">@color/ocean_bg</item>
+        <item name="android:windowBackground">@color/ocean_bg</item>
+        <item name="android:textColorPrimary">@color/ocean_text_primary</item>
+        <item name="android:textColorSecondary">@color/ocean_text_secondary</item>
+        <item name="android:statusBarColor">@color/ocean_bg</item>
+        <item name="android:navigationBarColor">@color/ocean_bg</item>
+    </style>
+
+    <style name="Theme.RetroLauncher.Ocean.Home" parent="Theme.RetroLauncher.Ocean">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
+    <!-- Forest — deep greens -->
+    <style name="Theme.RetroLauncher.Forest" parent="Theme.RetroLauncher">
+        <item name="colorPrimary">@color/forest_accent</item>
+        <item name="colorOnPrimary">@color/forest_text_primary</item>
+        <item name="colorSurface">@color/forest_card</item>
+        <item name="colorOnSurface">@color/forest_text_primary</item>
+        <item name="android:colorBackground">@color/forest_bg</item>
+        <item name="android:windowBackground">@color/forest_bg</item>
+        <item name="android:textColorPrimary">@color/forest_text_primary</item>
+        <item name="android:textColorSecondary">@color/forest_text_secondary</item>
+        <item name="android:statusBarColor">@color/forest_bg</item>
+        <item name="android:navigationBarColor">@color/forest_bg</item>
+    </style>
+
+    <style name="Theme.RetroLauncher.Forest.Home" parent="Theme.RetroLauncher.Forest">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
 </resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Forest night — darker green-black, less eye strain in the cabin -->
+    <color name="forest_bg">#081208</color>
+    <color name="forest_card">#122012</color>
+    <color name="forest_card_alt">#1C2E1C</color>
+    <color name="forest_divider">#264826</color>
+
+    <color name="forest_accent">#56B15A</color>
+    <color name="forest_accent_dim">#3B7E3E</color>
+
+    <color name="forest_text_primary">#D8E8D8</color>
+    <color name="forest_text_secondary">#98C098</color>
+    <color name="forest_text_tertiary">#588858</color>
+    <color name="forest_text_disabled">#2A582A</color>
+
+    <color name="forest_track">#122012</color>
+    <color name="forest_warn">#F0C830</color>
+    <color name="forest_err">#D94848</color>
+    <color name="forest_ok">#70B874</color>
+</resources>
