@@ -1,6 +1,6 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.3 verified — manifest ACs confirmed, status synced from failed to done)
+> Last updated: 2026-05-14 (T1.5 — icon task file status synced from pending to done; all 4 ACs verified on disk)
 
 ## Active Plan
 
@@ -102,6 +102,17 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **T1.5 done** (auto-updated by hook)
+
+- **T1.5 verified (2026-05-14)** — Task file status synced from pending to done.
+  All 4 ACs verified on disk: vector drawable `ic_launcher.xml` in `drawable/`,
+  adaptive-icon at `mipmap-anydpi-v26/ic_launcher.xml` with foreground+background,
+  round variant `ic_launcher_round.xml` in both `mipmap-anydpi-v26/` and
+  `mipmap-anydpi/`. Zero PNGs — all vector, well under 256 KB. Manifest references
+  `@mipmap/ic_launcher`. The engage run authored the icons but left task status as
+  pending; implementation used vectors in `mipmap-anydpi/` for pre-v26 fallback
+  instead of rasterized PNGs (functionally equivalent and more size-efficient).
 
 - **T1.3 done** (auto-updated by hook)
 
@@ -1824,10 +1835,7 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.38 — Phase 9 (testing/build), Build and install scripts for rooted HU**.
-   P2, Cx 5. Run via `/start-task T1.38`. Automates the install paths the
-   T1.37 manual test matrix documents (standard flavor install, system
-   flavor platform-signing + `/system/priv-app/` push, set-as-default).
+1. **T1.42** — Phase 10 (polish), P2 Cx 5. Run via `/start-task T1.42`.
 2. **T1.36 follow-ups (out-of-scope this commit)** — wire `connectedStandardDebugAndroidTest`
    into a CI workflow with an API 23 emulator (workflow file does not yet
    exist under `.github/`); upload `screenshots/` from the test apk's
