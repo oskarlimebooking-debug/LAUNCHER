@@ -2,14 +2,17 @@ package com.oskar.retrolauncher.ui.embed
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.BuildConfig
 import com.oskar.retrolauncher.R
+import com.oskar.retrolauncher.data.media.AudioFocusPassthrough
 import timber.log.Timber
 
 /**
@@ -25,6 +28,7 @@ class EmbedFragment : Fragment(R.layout.fragment_embed) {
     private var embedding: EmbeddingContract? = null
     private var textureView: TextureView? = null
     private var placeholderView: TextView? = null
+    private var audioFocusPassthrough: AudioFocusPassthrough? = null
 
     private val rightPanelWidth: Int get() = 614
     private val rightPanelHeight: Int get() = 600
@@ -74,6 +78,8 @@ class EmbedFragment : Fragment(R.layout.fragment_embed) {
         placeholderView?.visibility = View.GONE
         tv.visibility = View.VISIBLE
 
+        startAudioFocusPassthrough()
+
         tv.setOnTouchListener { _, event ->
             forwardEmbeddedTouch(event)
             true
@@ -86,7 +92,15 @@ class EmbedFragment : Fragment(R.layout.fragment_embed) {
     }
 
     private fun releaseEmbedding() {
+        audioFocusPassthrough?.stop()
         embedding?.release()
+    }
+
+    private fun startAudioFocusPassthrough() {
+        if (audioFocusPassthrough != null) return
+        val am = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        audioFocusPassthrough = AudioFocusPassthrough(am, App.media)
+        audioFocusPassthrough!!.start()
     }
 
     private fun showPlaceholder() {

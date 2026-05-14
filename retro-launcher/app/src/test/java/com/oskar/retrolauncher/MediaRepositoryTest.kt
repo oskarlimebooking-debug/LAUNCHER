@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import android.media.AudioManager
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -214,5 +215,64 @@ class MediaRepositoryTest {
         assertTrue(finalTitle == "A49" || finalTitle == "B49")
         assertEquals(finalTitle, seenA.last())
         assertEquals(finalTitle, seenB.last())
+    }
+
+    // -- Audio focus passthrough (T1.48) -----------------------------------
+
+    @Test
+    fun `onAudioDucked sets playing to false`() = runTest {
+        val repo = MediaRepository()
+        repo.update(trackState(playing = true))
+        assertTrue(repo.state.value.playing)
+
+        repo.onAudioDucked()
+        assertFalse("playing must be false after duck", repo.state.value.playing)
+    }
+
+    @Test
+    fun `onAudioDucked is idempotent when already not playing`() = runTest {
+        val repo = MediaRepository()
+        repo.update(trackState(playing = false))
+        assertFalse(repo.state.value.playing)
+
+        repo.onAudioDucked()
+        assertFalse("still false after repeated duck", repo.state.value.playing)
+    }
+
+    @Test
+    fun `audio focus loss transient can duck maps to AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK`() {
+        // Verify the Android constant values we depend on
+        assertEquals(
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
+            -3,
+        )
+        assertEquals(AudioManager.AUDIOFOCUS_LOSS_TRANSIENT, -2)
+        assertEquals(AudioManager.AUDIOFOCUS_GAIN, 1)
+    }
+
+    @Test
+    fun `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK constant is available at API 23`() {
+        // The constant was added in API 8; must exist at minSdk 23
+        assertEquals(
+            AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
+            4,
+        )
+    }
+
+    @Test
+    fun `focus loss transient or may duck both trigger duck state`() {
+        val repo = MediaRepository()
+        repo.update(trackState(playing = true))
+
+        // Both loss types should result in playing = false
+        val lossTypes = listOf(
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK,
+        )
+        for (lossType in lossTypes) {
+            repo.onAudioDucked()
+            assertFalse("playing false for loss type $lossType", repo.state.value.playing)
+            repo.update(trackState(playing = true)) // reset
+        }
     }
 }

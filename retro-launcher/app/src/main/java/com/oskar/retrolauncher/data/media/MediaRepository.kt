@@ -45,6 +45,18 @@ class MediaRepository(
     }
 
     /**
+     * Marks playback as paused because another app (e.g., Maps voice prompts
+     * in the embedded VirtualDisplay) has taken audio focus. The media tile
+     * reflects [playing] = false while ducked.
+     */
+    fun onAudioDucked() {
+        val current = _state.value
+        if (current.playing) {
+            _state.value = current.copy(playing = false)
+        }
+    }
+
+    /**
      * Launches the position-tick coroutine on [scope]. Cancels any previously
      * running ticker first, so calling this from `ServiceLocator.startup()` is
      * idempotent.
