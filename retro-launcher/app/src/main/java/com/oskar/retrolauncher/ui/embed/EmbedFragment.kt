@@ -105,9 +105,18 @@ class EmbedFragment : Fragment(R.layout.fragment_embed) {
 
     private fun showPlaceholder() {
         val placeholder = placeholderView ?: return
-        placeholder.setText(R.string.embedding_unavailable)
+        placeholder.setText(R.string.embed_upgrade_placeholder)
         placeholder.visibility = View.VISIBLE
         textureView?.visibility = View.GONE
+    }
+
+    // -- Page lifecycle (called from HomeFragment) --------------------------
+
+    /** Send the embedded app to background so it consumes no CPU. */
+    fun pauseEmbeddedApp() {
+        launchEmbedded(Intent(Intent.ACTION_MAIN).apply {
+            addCategory(Intent.CATEGORY_HOME)
+        })
     }
 
     // -- Public API for external callers ------------------------------------

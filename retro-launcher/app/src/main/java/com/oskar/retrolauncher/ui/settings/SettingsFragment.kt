@@ -62,6 +62,18 @@ class SettingsFragment : PreferenceFragmentCompat() {
             pref.entryValues = values
             if (pref.value == null) pref.value = ""
         }
+
+        findPreference<ListPreference>("embed_app")?.let { pref ->
+            val choices = IntentPickerEntries.resolve(ctx, IntentPickerEntries.launcherIntent())
+            // Exclude the launcher itself from embeddable app list
+            val filtered =
+                choices.filter { it.packageName != requireContext().packageName }
+            val (entries, values) =
+                IntentPickerEntries.toListPreferenceArrays(filtered, askEveryTime)
+            pref.entries = entries
+            pref.entryValues = values
+            if (pref.value == null) pref.value = ""
+        }
     }
 
     private fun wireWeatherLocationBridge() {

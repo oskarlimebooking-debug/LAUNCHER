@@ -5,6 +5,9 @@
     <!-- Embed surface placeholder (root-only feature ships in v0.3) -->
     <string name="embed_v03_placeholder">Map\n\nEmbedding lands in v0.3</string>
     <string name="embedding_unavailable">Embedding unavailable</string>
+    <string name="pref_embed_app">Embedded app</string>
+    <string name="pref_embed_app_summary">App to launch into the virtual display</string>
+    <string name="embed_upgrade_placeholder">Embedding requires system flavor</string>
 
     <!-- Status bar -->
     <string name="status_drawer_cd">App drawer</string>

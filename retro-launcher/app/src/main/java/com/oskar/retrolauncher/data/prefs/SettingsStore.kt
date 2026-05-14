@@ -112,6 +112,10 @@ class SettingsStore(
     val voiceApp: String? get() = prefs.getString(KEY_VOICE_APP, null)
     fun setVoiceApp(pkg: String?) = writeNullableString(KEY_VOICE_APP, pkg)
 
+    /** Package name of the app to embed in the VirtualDisplay. */
+    val embedApp: String? get() = prefs.getString(KEY_EMBED_APP, null)
+    fun setEmbedApp(pkg: String?) = writeNullableString(KEY_EMBED_APP, pkg)
+
     val weatherLat: Float? get() = readNullableFloat(KEY_WEATHER_LAT)
     val weatherLon: Float? get() = readNullableFloat(KEY_WEATHER_LON)
 
@@ -187,6 +191,7 @@ class SettingsStore(
     val appOrderFlow: Flow<List<String>> = flowOfKey(KEY_APP_ORDER) { appOrder }
     val mapAppFlow: Flow<String?> = flowOfKey(KEY_MAP_APP) { mapApp }
     val voiceAppFlow: Flow<String?> = flowOfKey(KEY_VOICE_APP) { voiceApp }
+    val embedAppFlow: Flow<String?> = flowOfKey(KEY_EMBED_APP) { embedApp }
     val weatherLatFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LAT) { weatherLat }
     val weatherLonFlow: Flow<Float?> = flowOfKey(KEY_WEATHER_LON) { weatherLon }
     val firstRunDoneFlow: Flow<Boolean> = flowOfKey(KEY_FIRST_RUN_DONE) { firstRunDone }
@@ -251,6 +256,7 @@ class SettingsStore(
         const val KEY_PINNED_APPS = "pinned_apps"
         const val KEY_MAP_APP = "map_app"
         const val KEY_VOICE_APP = "voice_app"
+        const val KEY_EMBED_APP = "embed_app"
         const val KEY_WEATHER_LAT = "weather_lat"
         const val KEY_WEATHER_LON = "weather_lon"
         const val KEY_FIRST_RUN_DONE = "first_run_done"

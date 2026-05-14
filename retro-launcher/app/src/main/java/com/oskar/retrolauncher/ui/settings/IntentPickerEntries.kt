@@ -25,6 +25,11 @@ object IntentPickerEntries {
     /** Intent that any voice / speech-recognition app responds to. */
     fun voiceIntent(): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
 
+    /** Intent matching all launchable apps (for embeddable app picker). */
+    fun launcherIntent(): Intent = Intent(Intent.ACTION_MAIN).apply {
+        addCategory(Intent.CATEGORY_LAUNCHER)
+    }
+
     /**
      * Query [PackageManager] for activities matching [intent] and return them as
      * `AppChoice`s. Errors are swallowed — returning an empty list is acceptable.

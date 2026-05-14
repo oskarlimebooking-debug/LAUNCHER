@@ -57,6 +57,13 @@ class IntentPickerEntriesTest {
     }
 
     @Test
+    fun `launcherIntent has MAIN action and LAUNCHER category`() {
+        val i = IntentPickerEntries.launcherIntent()
+        assertEquals(Intent.ACTION_MAIN, i.action)
+        assertTrue(i.categories.contains(Intent.CATEGORY_LAUNCHER))
+    }
+
+    @Test
     fun `toListPreferenceArrays handles empty choices`() {
         val (entries, values) = IntentPickerEntries.toListPreferenceArrays(
             emptyList(),

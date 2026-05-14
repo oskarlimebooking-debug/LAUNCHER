@@ -58,6 +58,10 @@
         <ListPreference
             android:key="voice_app"
             android:title="@string/pref_default_voice" />
+        <ListPreference
+            android:key="embed_app"
+            android:title="@string/pref_embed_app"
+            android:summary="@string/pref_embed_app_summary" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_weather">
