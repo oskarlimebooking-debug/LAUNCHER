@@ -2,6 +2,8 @@ package com.oskar.retrolauncher
 
 import android.app.Application
 import android.content.SharedPreferences
+import android.os.Build
+import android.widget.Toast
 import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.data.apps.AppListRepository
 import com.oskar.retrolauncher.data.location.LocationRepository
@@ -31,11 +33,36 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        if (BuildConfig.DEBUG) Timber.plant(Timber.DebugTree())
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+            installCrashBarrier()
+        }
         if (!::service.isInitialized) {
             service = ServiceLocator(this)
         }
         service.startup()
+    }
+
+    /** Safety net for API 23 compatibility regressions. Debug builds only. */
+    private fun installCrashBarrier() {
+        val prev = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            Timber.e(throwable, "Uncaught exception on API ${Build.VERSION.SDK_INT}")
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O &&
+                (throwable is NoSuchMethodError || throwable is NoClassDefFoundError)
+            ) {
+                try {
+                    Toast.makeText(
+                        this, "Crash — compatibility issue: ${throwable.javaClass.simpleName}",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                } catch (_: Exception) {
+                    // Toast may fail if no Looper is ready yet.
+                }
+            }
+            prev?.uncaughtException(thread, throwable)
+            if (prev == null) throw throwable
+        }
     }
 
     companion object {
