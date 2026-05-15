@@ -1,5 +1,6 @@
 package com.oskar.retrolauncher.system
 
+import android.os.Build
 import android.content.Context
 import android.content.Intent
 import android.app.ActivityOptions
@@ -68,7 +69,9 @@ class Embedding(private val ctx: Context) : EmbeddingContract {
     override fun launch(intent: Intent) {
         val displayId = virtualDisplay?.display?.displayId ?: return
         val opts = ActivityOptions.makeBasic()
-            .setLaunchDisplayId(displayId)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            opts.setLaunchDisplayId(displayId)
+        }
         ctx.startActivity(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             opts.toBundle(),
