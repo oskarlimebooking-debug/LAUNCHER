@@ -1,10 +1,13 @@
 package com.oskar.retrolauncher
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.LayoutInflaterCompat
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -43,6 +46,12 @@ class MainActivity : AppCompatActivity() {
         )
 
         super.onCreate(savedInstanceState)
+
+        // Material Components 1.11.0 MaterialComponentsViewInflater throws
+        // ArrayIndexOutOfBoundsException on API 23-25 when inflating TextViews.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            wrapLayoutInflaterFactory()
+        }
         // Edge-to-edge: the launcher draws under the system bars on the head unit.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Immersive sticky — head unit has no nav bar to spare.
@@ -149,6 +158,21 @@ class MainActivity : AppCompatActivity() {
         KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
         KeyEvent.KEYCODE_MEDIA_REWIND -> true
         else -> false
+    }
+
+    override fun getLayoutInflater(): LayoutInflater {
+        val inflater = super.getLayoutInflater()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) return inflater
+        val existing = inflater.factory2
+        if (existing == null || existing is SafeInflaterFactory) return inflater
+        inflater.factory2 = SafeInflaterFactory(existing)
+        return inflater
+    }
+
+    private fun wrapLayoutInflaterFactory() {
+        // Replace the Material Components inflater with our safe wrapper
+        // that catches ArrayIndexOutOfBoundsException on API 23-25.
+        LayoutInflaterCompat.setFactory2(layoutInflater, SafeInflaterFactory(layoutInflater.factory2!!))
     }
 
     private fun applyPanelRatio(leftPct: Int) {
