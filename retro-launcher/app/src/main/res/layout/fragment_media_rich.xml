@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/media_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_album"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="@dimen/tile_padding">
+
+    <ImageView
+        android:id="@+id/rich_art"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/music_album_art_cd"
+        android:src="@drawable/ic_album_placeholder"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/rich_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/track_title"
+        android:fontFamily="sans-serif-medium"
+        app:layout_constraintTop_toTopOf="@id/rich_art"
+        app:layout_constraintStart_toEndOf="@id/rich_art"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/rich_artist"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:singleLine="true"
+        android:ellipsize="end"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
+        app:layout_constraintTop_toBottomOf="@id/rich_title"
+        app:layout_constraintStart_toEndOf="@id/rich_art"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ProgressBar
+        android:id="@+id/rich_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:max="1"
+        android:progressTint="@color/accent"
+        app:layout_constraintTop_toBottomOf="@id/rich_art"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintTop_toBottomOf="@id/rich_progress"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/rich_prev"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_skip_prev"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/media_prev_cd" />
+
+        <ImageButton
+            android:id="@+id/rich_play_pause"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_button_round"
+            android:src="@drawable/ic_play"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/media_play_cd" />
+
+        <ImageButton
+            android:id="@+id/rich_next"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_skip_next"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/media_next_cd" />
+    </LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

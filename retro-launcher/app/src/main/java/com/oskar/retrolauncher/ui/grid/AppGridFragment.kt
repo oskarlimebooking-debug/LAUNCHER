@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.apps.AppEntry
@@ -90,6 +91,17 @@ class AppGridFragment : Fragment(R.layout.fragment_grid) {
         viewLifecycleOwner.lifecycleScope.launch {
             App.appList.rail.collect { railAdapter.submitList(it) }
         }
+
+        // Rail icon size — when the pref changes, swap to a fresh adapter so the
+        // new size is read in onCreateViewHolder. ListAdapter+DiffUtil would
+        // otherwise reuse existing ViewHolders with stale layoutParams.
+        viewLifecycleOwner.lifecycleScope.launch {
+            App.settings.changes(com.oskar.retrolauncher.data.prefs.SettingsStore.KEY_RAIL_ICON_SIZE).collect {
+                val fresh = RailAdapter(onClick = ::launch)
+                rail.adapter = fresh
+                fresh.submitList(App.appList.rail.value)
+            }
+        }
     }
 
     private fun attachDragReorder(
@@ -104,8 +116,23 @@ class AppGridFragment : Fragment(R.layout.fragment_grid) {
             longPressDragEnabled = longPress,
             onMoveStep = adapterMove,
             onDropped = onDropped,
+            // While a drag is in progress, prevent the host ViewPager2 from
+            // intercepting horizontal touches — otherwise the page swipes
+            // away under the finger and the drop never registers.
+            onDragStateChanged = { active ->
+                findAncestorViewPager(recycler)?.isUserInputEnabled = !active
+            },
         )
         return ItemTouchHelper(callback).also { it.attachToRecyclerView(recycler) }
+    }
+
+    private fun findAncestorViewPager(view: View): ViewPager2? {
+        var p = view.parent
+        while (p != null) {
+            if (p is ViewPager2) return p
+            p = p.parent
+        }
+        return null
     }
 
     private fun launch(entry: AppEntry) {

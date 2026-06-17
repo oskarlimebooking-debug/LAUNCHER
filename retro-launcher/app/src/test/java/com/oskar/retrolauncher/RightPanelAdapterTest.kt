@@ -1,5 +1,6 @@
 package com.oskar.retrolauncher
 
+import com.oskar.retrolauncher.ui.dashboard.DashboardFragment
 import com.oskar.retrolauncher.ui.embed.EmbedFragment
 import com.oskar.retrolauncher.ui.grid.AppGridFragment
 import com.oskar.retrolauncher.ui.home.RightPanelAdapter
@@ -9,22 +10,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * T1.8 AC3: RightPanelAdapter extends FragmentStateAdapter and returns
- *           EmbedFragment / AppGridFragment / TripsFragment.
- *
- * Uses the testable companion (`PAGE_COUNT`, `newPage`) so we don't need to wire up
- * a real FragmentManager + parent Fragment to verify the page-creation logic.
+ * Verifies the right-panel page order/count via the testable companion
+ * (`PAGE_COUNT`, `newPage`) — no FragmentManager needed. A.1 reordered the pages
+ * so the driving dashboard is the landing page and embed moved to the end.
  */
 class RightPanelAdapterTest {
 
     @Test
-    fun `adapter exposes three pages`() {
-        assertEquals(3, RightPanelAdapter.PAGE_COUNT)
+    fun `adapter exposes four pages with embed last`() {
+        assertEquals(4, RightPanelAdapter.PAGE_COUNT)
+        assertEquals(3, RightPanelAdapter.EMBED_PAGE)
     }
 
     @Test
-    fun `page 0 is EmbedFragment`() {
-        assertTrue(RightPanelAdapter.newPage(0) is EmbedFragment)
+    fun `page 0 is the dashboard landing page`() {
+        assertTrue(RightPanelAdapter.newPage(0) is DashboardFragment)
     }
 
     @Test
@@ -37,8 +37,13 @@ class RightPanelAdapterTest {
         assertTrue(RightPanelAdapter.newPage(2) is TripsFragment)
     }
 
+    @Test
+    fun `page 3 is EmbedFragment`() {
+        assertTrue(RightPanelAdapter.newPage(3) is EmbedFragment)
+    }
+
     @Test(expected = IllegalStateException::class)
     fun `out-of-range position errors`() {
-        RightPanelAdapter.newPage(3)
+        RightPanelAdapter.newPage(4)
     }
 }

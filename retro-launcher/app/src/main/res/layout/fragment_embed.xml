@@ -4,21 +4,19 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_tile">
 
-    <!-- VirtualDisplay rendering surface (system flavor) -->
+    <!-- Default content: cyberpunk-HUD location panel (range rings, trail,
+         compass, corner readouts). Native View, no WebView — sharedUserId=
+         system forbids WebView in privileged processes on API 23+. -->
+    <com.oskar.retrolauncher.ui.embed.LocationHudView
+        android:id="@+id/embed_hud"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- VirtualDisplay surface — only used on system flavor + API 26+ when an
+         embed app is configured. Hidden by default; launchEmbedded() toggles it. -->
     <TextureView
         android:id="@+id/embed_texture"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone" />
-
-    <!-- Fallback for standard flavor and before VirtualDisplay is ready -->
-    <TextView
-        android:id="@+id/embed_placeholder"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:gravity="center"
-        android:text="@string/embed_v03_placeholder"
-        android:textColor="@color/text_tertiary"
-        android:textSize="14sp" />
 </FrameLayout>

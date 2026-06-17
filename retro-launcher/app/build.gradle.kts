@@ -17,8 +17,8 @@ android {
         applicationId = "com.oskar.retrolauncher"
         minSdk = 23
         targetSdk = 28
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 13
+        versionName = "0.2.2"
 
         // T1.36 — custom runner installs a TestServiceLocator before App.onCreate
         // so instrumented fragment tests never touch real network or sensors.
@@ -56,6 +56,9 @@ android {
         create("standard") {
             dimension = "build"
             buildConfigField("boolean", "ENABLE_EMBEDDING", "false")
+            // Standard flavor: sideloadable build, debug-signed (release buildType
+            // no longer pins this so the system flavor can pick its own key — T2.7).
+            signingConfig = signingConfigs.getByName("debug")
         }
         create("system") {
             dimension = "build"
@@ -112,13 +115,21 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            // Signing intentionally NOT pinned here — each productFlavor sets its
+            // own (standard → debug for sideload; system → platform when the
+            // keystore is present). A buildType-level signingConfig would
+            // override the flavor's choice in AGP, which we don't want.
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // T1.49 post-release fix: desugar Java 8+ APIs (java.time, streams, etc.)
+        // for compatibility with Android 6 (API 23) head units. Without this a
+        // transitive dependency calling Optional/stream/time classes would throw
+        // NoClassDefFoundError at runtime.
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions { jvmTarget = "17" }
 
@@ -172,6 +183,13 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.osmdroid)
 
+    // Media3 — local audio playback engine + the MediaSession the launcher owns.
+    // Only the 3 core modules (no dash/hls/smoothstreaming/ui) to keep the APK
+    // and method count down for the Cortex-A7 head unit; R8 strips unused renderers.
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.common)
+
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.robolectric)
@@ -181,6 +199,10 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotest.property)
     testImplementation(libs.androidx.room.testing)
+    // T2.7 — Robolectric unit tests in this module use ApplicationProvider
+    // (added by T2.6/T1.49). core-ktx pulls in androidx.test:core transitively
+    // so the existing tests compile under testStandardReleaseUnitTest.
+    testImplementation(libs.androidx.test.core.ktx)
 
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.androidx.test.espresso)
@@ -191,6 +213,9 @@ dependencies {
     androidTestImplementation(libs.androidx.room.testing)
     // fragment-testing ships an empty debug-only test activity used by FragmentScenario.
     debugImplementation(libs.androidx.fragment.testing)
+
+    // Desugar Java 8+ APIs (java.time, Optional, streams, etc.) for API 23 compatibility.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
 // T1.35: jacoco coverage for unit tests.

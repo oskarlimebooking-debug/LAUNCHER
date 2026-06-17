@@ -4,14 +4,15 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
-import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.LayoutInflaterCompat
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.data.prefs.Theme
@@ -29,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private var appliedTheme: Theme = Theme.SYSTEM
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Timber.i("MainActivity.onCreate start sdk=%d", Build.VERSION.SDK_INT)
         // T1.42 — apply the persisted theme before super.onCreate so every
         // fragment and view inflates with the correct styled attributes.
         appliedTheme = App.settings.theme
@@ -46,12 +48,13 @@ class MainActivity : AppCompatActivity() {
         )
 
         super.onCreate(savedInstanceState)
+        Timber.d("MainActivity super.onCreate done")
 
-        // Material Components 1.11.0 MaterialComponentsViewInflater throws
-        // ArrayIndexOutOfBoundsException on API 23-25 when inflating TextViews.
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-            wrapLayoutInflaterFactory()
-        }
+        // T2.7 — Material's API 23 TextView crash is handled by
+        // SafeMaterialComponentsViewInflater wired via Theme.RetroLauncher's
+        // viewInflaterClass. Post-onCreate factory wrap was unreliable because
+        // LayoutInflater.setFactory2() permanently locks on API 23.
+
         // Edge-to-edge: the launcher draws under the system bars on the head unit.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Immersive sticky — head unit has no nav bar to spare.
@@ -63,10 +66,24 @@ class MainActivity : AppCompatActivity() {
                 View.SYSTEM_UI_FLAG_FULLSCREEN or
                 View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
 
+        Timber.d("MainActivity setContentView()")
         setContentView(R.layout.activity_main)
         root = findViewById(R.id.root)
 
+        // T2.7-followup — some head-unit ROMs (ALPS A6_series among them) ignore
+        // IMMERSIVE_STICKY and keep their system nav bar visible, which then
+        // obscures the StatusBarFragment row at the bottom (Settings, drawer,
+        // clock all become un-tappable). Apply the system-bar bottom inset as
+        // padding so content always stays above the nav bar; when immersive
+        // works the inset is 0 and this is a no-op.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars: Insets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+
         if (savedInstanceState == null) {
+            Timber.d("MainActivity installing root fragments")
             supportFragmentManager.beginTransaction()
                 .replace(R.id.home_container, HomeFragment())
                 .replace(R.id.status_bar_container, StatusBarFragment())
@@ -158,21 +175,6 @@ class MainActivity : AppCompatActivity() {
         KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
         KeyEvent.KEYCODE_MEDIA_REWIND -> true
         else -> false
-    }
-
-    override fun getLayoutInflater(): LayoutInflater {
-        val inflater = super.getLayoutInflater()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) return inflater
-        val existing = inflater.factory2
-        if (existing == null || existing is SafeInflaterFactory) return inflater
-        inflater.factory2 = SafeInflaterFactory(existing)
-        return inflater
-    }
-
-    private fun wrapLayoutInflaterFactory() {
-        // Replace the Material Components inflater with our safe wrapper
-        // that catches ArrayIndexOutOfBoundsException on API 23-25.
-        LayoutInflaterCompat.setFactory2(layoutInflater, SafeInflaterFactory(layoutInflater.factory2!!))
     }
 
     private fun applyPanelRatio(leftPct: Int) {

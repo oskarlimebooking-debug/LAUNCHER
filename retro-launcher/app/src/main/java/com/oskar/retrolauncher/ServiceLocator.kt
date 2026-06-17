@@ -10,6 +10,10 @@ import androidx.work.WorkManager
 import com.oskar.retrolauncher.data.apps.AppListRepository
 import com.oskar.retrolauncher.data.location.LocationRepository
 import com.oskar.retrolauncher.data.media.MediaRepository
+import com.oskar.retrolauncher.data.music.LocalMusicRepository
+import com.oskar.retrolauncher.data.music.MIGRATION_1_2
+import com.oskar.retrolauncher.data.music.MusicLibraryRepository
+import com.oskar.retrolauncher.data.music.PlayerController
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.data.trip.AppDb
 import com.oskar.retrolauncher.data.trip.SharedPrefsTripStateStore
@@ -27,6 +31,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.Cache
 import okhttp3.OkHttpClient
+import timber.log.Timber
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -58,7 +63,11 @@ open class ServiceLocator(protected val app: Application) {
     }
 
     open val db: AppDb by lazy {
-        Room.databaseBuilder(app, AppDb::class.java, "retro").build()
+        Room.databaseBuilder(app, AppDb::class.java, "retro")
+            // 1 → 2 adds the music tables (likes/playlists) without touching
+            // trips; a real migration keeps recorded trips across the upgrade.
+            .addMigrations(MIGRATION_1_2)
+            .build()
     }
 
     open val prefs: SharedPreferences by lazy {
@@ -68,6 +77,15 @@ open class ServiceLocator(protected val app: Application) {
     open val settings: SettingsStore by lazy { SettingsStore(prefs) }
 
     open val media: MediaRepository by lazy { MediaRepository() }
+
+    /** Built-in local music player (Media3 controller bridge to MusicService). */
+    open val player: PlayerController by lazy { PlayerController(app) }
+
+    /** On-device music library scanned from MediaStore. */
+    open val localMusic: LocalMusicRepository by lazy { LocalMusicRepository(app) }
+
+    /** Likes + playlists (Room-backed). */
+    open val musicLibrary: MusicLibraryRepository by lazy { MusicLibraryRepository(db.music()) }
 
     open val weather: WeatherRepository by lazy {
         // T1.33 — prefer the user-entered key from the first-run wizard,
@@ -108,30 +126,41 @@ open class ServiceLocator(protected val app: Application) {
      * exactly once from `App.onCreate`.
      */
     open fun startup() {
-        appScope.launch {
-            settings.changes(SettingsStore.KEY_RECORD_TRIPS).collect {
-                tripRecorder.setEnabled(settings.recordTrips)
+        Timber.d("ServiceLocator.startup begin")
+        runCatching {
+            appScope.launch {
+                settings.changes(SettingsStore.KEY_RECORD_TRIPS).collect {
+                    tripRecorder.setEnabled(settings.recordTrips)
+                }
             }
-        }
+        }.onFailure { Timber.w(it, "startup: trip-recorder collect failed") }
 
-        media.startPositionTicker(appScope)
+        runCatching { media.startPositionTicker(appScope) }
+            .onFailure { Timber.w(it, "startup: media ticker failed") }
 
         runCatching {
             ContextCompat.startForegroundService(
                 app,
                 Intent(app, LocationService::class.java),
             )
-        }
+        }.onFailure { Timber.w(it, "startup: startForegroundService failed") }
 
         // WorkManager auto-initialization can be absent in tests or pared-down ROMs;
         // if it is, just skip scheduling — the launcher must still come up.
         runCatching { WorkManager.getInstance(app).scheduleWeather() }
+            .onFailure { Timber.w(it, "startup: scheduleWeather failed") }
 
         // T1.34 AC4 — enforce the boot-receiver gate every launch so installs
         // that predate the new manifest default get realigned with firstRunDone.
         runCatching { BootReceiverGate.syncWithFirstRun(app, settings.firstRunDone) }
+            .onFailure { Timber.w(it, "startup: BootReceiverGate sync failed") }
 
-        appList.start()
-        appScope.launch { runCatching { appList.refresh() } }
+        runCatching { appList.start() }
+            .onFailure { Timber.w(it, "startup: appList.start failed") }
+        appScope.launch {
+            runCatching { appList.refresh() }
+                .onFailure { Timber.w(it, "startup: appList.refresh failed") }
+        }
+        Timber.d("ServiceLocator.startup end")
     }
 }

@@ -42,30 +42,23 @@ class EmbedFragmentTest {
     }
 
     @Test
-    fun `fragment_embed contains a placeholder TextView`() {
+    fun `fragment_embed contains the LocationHudView`() {
         val ctx = RuntimeEnvironment.getApplication()
         val parser = ctx.resources.getLayout(
             ctx.resources.getIdentifier("fragment_embed", "layout", ctx.packageName),
         )
-        var sawPlaceholder = false
+        var sawHud = false
         var event = parser.eventType
         while (event != XmlPullParser.END_DOCUMENT) {
-            if (event == XmlPullParser.START_TAG) {
-                val id = parser.getAttributeResourceValue(
-                    "http://schemas.android.com/apk/res/android", "id", 0,
-                )
-                if (id == ctx.resources.getIdentifier(
-                        "embed_placeholder", "id", ctx.packageName,
-                    )
-                ) {
-                    sawPlaceholder = true
-                }
+            if (event == XmlPullParser.START_TAG &&
+                parser.name == "com.oskar.retrolauncher.ui.embed.LocationHudView") {
+                sawHud = true
             }
             event = parser.next()
         }
         assertTrue(
-            "fragment_embed.xml must keep the embed_placeholder TextView as fallback",
-            sawPlaceholder,
+            "fragment_embed.xml must contain the LocationHudView as the default content",
+            sawHud,
         )
     }
 

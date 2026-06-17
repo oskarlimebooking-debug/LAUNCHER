@@ -29,6 +29,7 @@ class DragReorderCallback(
     private val longPressDragEnabled: Boolean,
     private val onMoveStep: (from: Int, to: Int) -> Unit,
     private val onDropped: () -> Unit,
+    private val onDragStateChanged: (active: Boolean) -> Unit = {},
 ) : ItemTouchHelper.Callback() {
 
     override fun getMovementFlags(
@@ -58,12 +59,14 @@ class DragReorderCallback(
         super.onSelectedChanged(viewHolder, actionState)
         if (actionState == ItemTouchHelper.ACTION_STATE_DRAG && viewHolder != null) {
             applyLift(viewHolder.itemView)
+            onDragStateChanged(true)
         }
     }
 
     override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         super.clearView(recyclerView, viewHolder)
         clearLift(viewHolder.itemView)
+        onDragStateChanged(false)
         onDropped()
     }
 

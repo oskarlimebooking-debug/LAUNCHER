@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      T2.7 follow-up — values-v23/themes.xml re-bases Theme.RetroLauncher on
+      Theme.AppCompat to dodge the API 23 StringBlock crash in Material 3
+      textAppearance. This file re-overrides for API 26+, where Material 3
+      font-resource handling works correctly and we want the Material look.
+    -->
+    <style name="Theme.RetroLauncher" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="viewInflaterClass">com.oskar.retrolauncher.SafeMaterialComponentsViewInflater</item>
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="fontFamily">sans-serif</item>
+    </style>
+
+</resources>

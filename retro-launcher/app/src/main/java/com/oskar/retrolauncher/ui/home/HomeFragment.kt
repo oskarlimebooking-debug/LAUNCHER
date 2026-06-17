@@ -3,6 +3,8 @@ package com.oskar.retrolauncher.ui.home
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.constraintlayout.widget.Guideline
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -11,6 +13,7 @@ import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.ui.embed.EmbedFragment
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 /**
@@ -19,7 +22,7 @@ import kotlinx.coroutines.launch
  */
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
-    private var currentPage = 1 // start on app grid
+    private var currentPage = 0 // start on the dashboard
     private var embedFragment: EmbedFragment? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -27,20 +30,28 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val adapter = RightPanelAdapter(this)
         pager.adapter = adapter
         pager.offscreenPageLimit = 1
-        pager.setCurrentItem(1, false) // Open on the app grid by default
+        pager.setCurrentItem(0, false) // Open on the driving dashboard by default
 
-        val dots = view.findViewById<DotsIndicator>(R.id.dots)
-        dots.attachTo(pager)
+        val tabs = view.findViewById<PanelTabStrip>(R.id.panel_tabs)
+        tabs.attachTo(
+            pager,
+            listOf(
+                getString(R.string.tab_dashboard),
+                getString(R.string.tab_apps),
+                getString(R.string.tab_trips),
+                getString(R.string.tab_map),
+            ),
+        )
 
         pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 val prevPage = currentPage
                 currentPage = position
-                if (prevPage == 0 && position != 0) {
+                if (prevPage == RightPanelAdapter.EMBED_PAGE && position != RightPanelAdapter.EMBED_PAGE) {
                     // Leaving embed page — send embedded app to background
                     embedFragment?.pauseEmbeddedApp()
                 }
-                if (position == 0) {
+                if (position == RightPanelAdapter.EMBED_PAGE) {
                     launchEmbedApp()
                 }
             }
@@ -56,6 +67,36 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 applyPanelRatio(homeSplit, App.settings.panelRatioPercent)
             }
         }
+
+        // Media card sizing: enlarge / replace the weather tile (M5).
+        val root = view as ConstraintLayout
+        applyMediaLayout(root)
+        viewLifecycleOwner.lifecycleScope.launch {
+            merge(
+                App.settings.changes(SettingsStore.KEY_MEDIA_CARD_SIZE),
+                App.settings.changes(SettingsStore.KEY_MEDIA_REPLACES_WEATHER),
+            ).collect { applyMediaLayout(root) }
+        }
+    }
+
+    /**
+     * Reflect the media-card sizing prefs: when it replaces weather, hide the
+     * weather tile and stretch media to the full left column; when only
+     * enlarged, give media the larger share of the column.
+     */
+    private fun applyMediaLayout(root: ConstraintLayout) {
+        val replaces = App.settings.mediaReplacesWeather
+        val enlarged = App.settings.mediaCardEnlarged
+        val set = ConstraintSet().apply { clone(root) }
+        if (replaces) {
+            set.setVisibility(R.id.weather_slot, View.GONE)
+            set.connect(R.id.media_slot, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
+        } else {
+            set.setVisibility(R.id.weather_slot, View.VISIBLE)
+            set.connect(R.id.media_slot, ConstraintSet.BOTTOM, R.id.left_split, ConstraintSet.TOP)
+            set.setGuidelinePercent(R.id.left_split, if (enlarged) 0.62f else 0.50f)
+        }
+        set.applyTo(root)
     }
 
     /** Supply the cached fragment so [onPageSelected] can reach it. */

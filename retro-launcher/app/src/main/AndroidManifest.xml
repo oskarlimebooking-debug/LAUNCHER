@@ -10,8 +10,17 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Foreground service for trip recording -->
+    <!-- Foreground service for trip recording + music playback -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!-- Read local audio for the built-in music player. Legacy storage model
+         (targetSdk 28) returns all audio with READ_EXTERNAL_STORAGE on API ≤32;
+         READ_MEDIA_AUDIO future-proofs API 33+. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
     <!-- Notification listener (for media controls) -->
     <uses-permission
@@ -120,6 +129,18 @@
         <service
             android:name=".service.LocationService"
             android:exported="false" />
+
+        <!-- Built-in music player. Media3 MediaLibraryService — hosts the
+             launcher's own MediaSession + ExoPlayer. Exported so the session is
+             discoverable (incl. by our own MediaNotificationListener). -->
+        <service
+            android:name=".service.MusicService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+            </intent-filter>
+        </service>
 
         <!-- Boot receiver. Disabled by default so it cannot fire before the
              first-run wizard has set up permissions / OWM key. The wizard

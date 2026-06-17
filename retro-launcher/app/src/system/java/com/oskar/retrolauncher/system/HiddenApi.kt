@@ -108,7 +108,7 @@ object HiddenApi {
      */
     fun injectInputEvent(event: MotionEvent): Boolean {
         Log.w(TAG, "HiddenApi dependency: IInputManager")
-        try {
+        return try {
             val smClass = classProvider.forName("android.os.ServiceManager")
                 ?: return false.also {
                     Log.w(TAG, "ServiceManager class not found")
@@ -181,7 +181,7 @@ object HiddenApi {
      */
     fun getRunningTasks(maxNum: Int): List<android.app.ActivityManager.RunningTaskInfo>? {
         Log.w(TAG, "HiddenApi dependency: ActivityManagerNative")
-        try {
+        return try {
             val amnClass = classProvider.forName("android.app.ActivityManagerNative")
                 ?: return null.also {
                     Log.w(TAG, "ActivityManagerNative class not found")
@@ -205,7 +205,7 @@ object HiddenApi {
             }
 
             @Suppress("UNCHECKED_CAST")
-            return getTasksMethod.invoke(am, maxNum, 0)
+            getTasksMethod.invoke(am, maxNum, 0)
                 as? List<android.app.ActivityManager.RunningTaskInfo>
         } catch (e: Exception) {
             Log.w(TAG, "Failed to get running tasks", e)

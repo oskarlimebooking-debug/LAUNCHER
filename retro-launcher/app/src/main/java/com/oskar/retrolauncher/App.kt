@@ -8,11 +8,17 @@ import androidx.annotation.VisibleForTesting
 import com.oskar.retrolauncher.data.apps.AppListRepository
 import com.oskar.retrolauncher.data.location.LocationRepository
 import com.oskar.retrolauncher.data.media.MediaRepository
+import com.oskar.retrolauncher.data.music.LocalMusicRepository
+import com.oskar.retrolauncher.data.music.MusicLibraryRepository
+import com.oskar.retrolauncher.data.music.PlayerController
 import com.oskar.retrolauncher.data.prefs.SettingsStore
 import com.oskar.retrolauncher.data.trip.AppDb
 import com.oskar.retrolauncher.data.trip.TripRecorder
 import com.oskar.retrolauncher.data.trip.TripRepository
 import com.oskar.retrolauncher.data.weather.WeatherRepository
+import com.oskar.retrolauncher.diag.CrashHandler
+import com.oskar.retrolauncher.diag.FileLogger
+import com.oskar.retrolauncher.diag.LogPaths
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
@@ -33,17 +39,58 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // Diagnostics first — every subsequent crash should end up on disk.
+        installDiagnostics()
+
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-            installCrashBarrier()
         }
+        installCrashBarrier()
+
+        Timber.i(
+            "App.onCreate sdk=%d device=%s/%s app=%s %s (%s)",
+            Build.VERSION.SDK_INT,
+            Build.MANUFACTURER,
+            Build.MODEL,
+            BuildConfig.APPLICATION_ID,
+            BuildConfig.VERSION_NAME,
+            if (BuildConfig.DEBUG) "debug" else "release",
+        )
+
         if (!::service.isInitialized) {
             service = ServiceLocator(this)
         }
-        service.startup()
+        runCatching { service.startup() }.onFailure {
+            Timber.e(it, "ServiceLocator.startup() failed")
+        }
     }
 
-    /** Safety net for API 23 compatibility regressions. Debug builds only. */
+    /** File logger + crash dumper. Always-on (debug AND release) so head-unit crashes leave a trail. */
+    private fun installDiagnostics() {
+        runCatching {
+            val logDir = LogPaths.forContext(this)
+            Timber.plant(FileLogger(logDir))
+            CrashHandler.install(
+                logDir = logDir,
+                info = CrashHandler.DeviceInfo(
+                    sdk = Build.VERSION.SDK_INT,
+                    manufacturer = Build.MANUFACTURER ?: "unknown",
+                    model = Build.MODEL ?: "unknown",
+                    fingerprint = Build.FINGERPRINT ?: "unknown",
+                    versionName = BuildConfig.VERSION_NAME,
+                    applicationId = BuildConfig.APPLICATION_ID,
+                    buildType = if (BuildConfig.DEBUG) "debug" else "release",
+                ),
+            )
+        }
+    }
+
+    /**
+     * Safety net for API 23 compatibility regressions. Runs in every build
+     * type — the head unit ships release APKs and that's exactly where we
+     * need the diagnostic trail to survive a crash.
+     */
     private fun installCrashBarrier() {
         val prev = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
@@ -79,6 +126,9 @@ class App : Application() {
         val prefs: SharedPreferences get() = instance.service.prefs
         val settings: SettingsStore get() = instance.service.settings
         val media: MediaRepository get() = instance.service.media
+        val player: PlayerController get() = instance.service.player
+        val localMusic: LocalMusicRepository get() = instance.service.localMusic
+        val musicLibrary: MusicLibraryRepository get() = instance.service.musicLibrary
         val weather: WeatherRepository get() = instance.service.weather
         val location: LocationRepository get() = instance.service.location
         val appList: AppListRepository get() = instance.service.appList

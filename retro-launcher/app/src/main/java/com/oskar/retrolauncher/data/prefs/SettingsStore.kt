@@ -64,6 +64,10 @@ class SettingsStore(
 
     val gridCols: Int get() = prefs.getString(KEY_GRID_COLS, "4")?.toIntOrNull() ?: 4
 
+    /** Rail icon size in dp. Backed by a string-list pref so the settings UI is a ListPreference. */
+    val railIconSizeDp: Int
+        get() = prefs.getString(KEY_RAIL_ICON_SIZE, "72")?.toIntOrNull() ?: 72
+
     /** Spec 14.2 alias — Int gridColumns. */
     val gridColumns: Int get() = gridCols.coerceIn(3, 5)
 
@@ -178,6 +182,20 @@ class SettingsStore(
         prefs.edit().putInt(KEY_WEATHER_REFRESH_MIN, minutes.coerceAtLeast(5)).apply()
     }
 
+    // ───────── Media card / player ─────────
+    // Driven entirely by SwitchPreferenceCompat (writes the keys directly), so
+    // these are read-only here — no setters, keeping the file's function count
+    // under the arch limit.
+
+    /** Full local music player vs. the simple external-control card. Default on. */
+    val fullPlayerMode: Boolean get() = prefs.getBoolean(KEY_FULL_PLAYER, true)
+
+    /** Media card grows to fill the left column (more art / info). */
+    val mediaCardEnlarged: Boolean get() = prefs.getBoolean(KEY_MEDIA_CARD_SIZE, false)
+
+    /** When enlarged, the media card replaces the weather tile entirely. */
+    val mediaReplacesWeather: Boolean get() = prefs.getBoolean(KEY_MEDIA_REPLACES_WEATHER, false)
+
     // ───────── Per-property Flows (T1.31 AC3) ─────────
 
     val unitsFlow: Flow<Units> = flowOfKey(KEY_UNITS) { units }
@@ -200,6 +218,10 @@ class SettingsStore(
     val gpxExportFlow: Flow<Boolean> = flowOfKey(KEY_GPX_EXPORT) { gpxExport }
     val weatherRefreshIntervalMinFlow: Flow<Int> =
         flowOfKey(KEY_WEATHER_REFRESH_MIN) { weatherRefreshIntervalMin }
+    val fullPlayerModeFlow: Flow<Boolean> = flowOfKey(KEY_FULL_PLAYER) { fullPlayerMode }
+    val mediaCardEnlargedFlow: Flow<Boolean> = flowOfKey(KEY_MEDIA_CARD_SIZE) { mediaCardEnlarged }
+    val mediaReplacesWeatherFlow: Flow<Boolean> =
+        flowOfKey(KEY_MEDIA_REPLACES_WEATHER) { mediaReplacesWeather }
 
     // ───────── Listener flows (legacy, still used) ─────────
 
@@ -249,6 +271,7 @@ class SettingsStore(
         const val KEY_PANEL_RATIO = "panel_ratio"
         const val KEY_GRID_COLS = "grid_cols"
         const val KEY_GRID_ROWS = "grid_rows"
+        const val KEY_RAIL_ICON_SIZE = "rail_icon_size"
         const val KEY_RECORD_TRIPS = "record_trips"
         const val KEY_SPEED_THRESHOLD = "speed_threshold"
         const val KEY_SHOW_LOC_STATUS = "show_loc_status"
@@ -264,9 +287,17 @@ class SettingsStore(
         const val KEY_THEME = "theme"
         const val KEY_GPX_EXPORT = "gpx_export"
         const val KEY_WEATHER_REFRESH_MIN = "weather_refresh_min"
+        const val KEY_FULL_PLAYER = "full_player"
+        const val KEY_MEDIA_CARD_SIZE = "media_card_size"
+        const val KEY_MEDIA_REPLACES_WEATHER = "media_replaces_weather"
 
-        /** Hard cap on rail entries (T1.30 AC1 / AC3). */
-        const val MAX_PINNED = 8
+        /**
+         * Hard cap on rail entries. Dropped 8 → 5 in T2.7-followup so the rail
+         * icons can be enlarged (rail_icon 24dp → 56dp) without overflowing the
+         * right column. Existing pins beyond index 4 are FIFO-evicted on next
+         * `pin()` call.
+         */
+        const val MAX_PINNED = 5
 
         /** Default weather coordinates when no override and no GPS fix — Ljubljana, Slovenia. */
         const val DEFAULT_WEATHER_LAT = 46.0569f

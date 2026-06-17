@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
 import com.oskar.retrolauncher.data.apps.AppEntry
 
@@ -18,6 +19,14 @@ class RailAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_rail, parent, false)
+        // Apply the SettingsStore-driven rail icon size at inflate time so a
+        // larger pref takes effect immediately (the adapter is rebuilt
+        // whenever the pinned list changes, which happens on size change).
+        val sizePx = (App.settings.railIconSizeDp * parent.resources.displayMetrics.density).toInt()
+        val icon = view.findViewById<ImageView>(R.id.rail_icon)
+        icon.layoutParams = icon.layoutParams.apply {
+            width = sizePx; height = sizePx
+        }
         return VH(view)
     }
 

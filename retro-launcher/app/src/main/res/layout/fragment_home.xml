@@ -56,10 +56,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/dots" />
 
-    <com.oskar.retrolauncher.ui.home.DotsIndicator
-        android:id="@+id/dots"
+    <com.oskar.retrolauncher.ui.home.PanelTabStrip
+        android:id="@+id/panel_tabs"
         android:layout_width="0dp"
-        android:layout_height="20dp"
+        android:layout_height="36dp"
         android:layout_marginBottom="4dp"
         app:layout_constraintStart_toStartOf="@id/home_split"
         app:layout_constraintEnd_toEndOf="parent"

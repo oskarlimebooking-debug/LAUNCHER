@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:sharedUserId="android.uid.system"
+    tools:replace="android:sharedUserId">
 
     <!-- Platform-signature permissions required by the system flavor.
          These are gated behind the platform keystore — without it, the flavor
@@ -16,10 +18,11 @@
     <uses-permission android:name="android.permission.INTERNAL_SYSTEM_WINDOW"
         tools:ignore="ProtectedPermissions" />
 
-    <!-- Shared user ID so the APK runs under android.uid.system.
-         Only valid when signed with the platform certificate. -->
-    <application
-        android:sharedUserId="android.uid.system"
-        tools:replace="android:sharedUserId" />
+    <!-- T2.7-followup — sharedUserId is a <manifest> attribute, not <application>;
+         the prior placement inside <application> was silently dropped by the
+         manifest merger (verified post-install: the system APK ran with UID 10065
+         instead of 1000). Declaring it on <manifest> with tools:replace gives the
+         merger the explicit override it needs against the main manifest, which
+         has no sharedUserId. -->
 
 </manifest>

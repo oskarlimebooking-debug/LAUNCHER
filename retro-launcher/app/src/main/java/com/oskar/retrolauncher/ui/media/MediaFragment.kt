@@ -1,130 +1,109 @@
 package com.oskar.retrolauncher.ui.media
 
+import android.content.Context
+import android.media.AudioManager
 import android.os.Bundle
-import android.util.TypedValue
+import android.os.SystemClock
+import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.core.content.ContextCompat
+import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
-import com.bumptech.glide.request.RequestOptions
 import com.oskar.retrolauncher.App
 import com.oskar.retrolauncher.R
+import com.oskar.retrolauncher.ui.player.PlayerHostFragment
 
 /**
- * T1.17 — binds the active media session to the layout per spec section 9.6.
- * T1.18 — drives the tile background via [MediaTintCache] (cache by track) and
- * [MediaTinter] (400 ms ArgbEvaluator gradient transition).
- *
- * The position seek bar is driven by `MediaRepository`'s 250 ms ticker (T1.16);
- * this fragment never runs its own loop.
+ * The left-column media tile. Two modes:
+ *  - Full-player (default): rich card (art + title + artist + progress +
+ *    transport) bound to the built-in player via [MediaCardBinder]; tap opens
+ *    the full player.
+ *  - Simple: marquee title + transport, controlling whatever external session
+ *    is active (the original behaviour); used when the built-in player is off.
  */
-class MediaFragment : Fragment(R.layout.fragment_media) {
+class MediaFragment : Fragment() {
 
     private val vm: MediaViewModel by viewModels()
-    private var lastArtRef: android.graphics.Bitmap? = null
-    private var tinter: MediaTinter? = null
-    private var tintCache: MediaTintCache? = null
+    private var lastEmpty: Boolean = true
+    private var lastTitleApplied: String? = null
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
+        val layout = if (App.settings.fullPlayerMode) R.layout.fragment_media_rich else R.layout.fragment_media
+        return inflater.inflate(layout, container, false)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val art = view.findViewById<ImageView>(R.id.art)
+        if (App.settings.fullPlayerMode) {
+            MediaCardBinder(this, view) { openFullPlayer() }.bind()
+        } else {
+            bindSimpleCard(view)
+        }
+    }
+
+    private fun bindSimpleCard(view: View) {
         val title = view.findViewById<TextView>(R.id.title)
-        val artist = view.findViewById<TextView>(R.id.artist)
         val playPause = view.findViewById<ImageButton>(R.id.play_pause)
         val prev = view.findViewById<ImageButton>(R.id.prev)
         val next = view.findViewById<ImageButton>(R.id.next)
-        val bar = view.findViewById<ProgressBar>(R.id.progress)
-
-        // AC2: marquee runs only while the TextView is "selected".
         title.isSelected = true
-        artist.isSelected = true
-
-        val cornerPx = resources.getDimensionPixelSize(R.dimen.album_art_corner)
-        val glideOptions = RequestOptions().transform(RoundedCorners(cornerPx))
-
-        // T1.18 AC4: fall back to the theme's colorSurface when extraction fails
-        // or art is null. Resolved once per view-create from the inflated theme.
-        val surface = resolveColorSurface(view)
-        val tinter = MediaTinter(
-            fallback = surface,
-            cornerRadiusPx = resources.getDimension(R.dimen.tile_corner),
-        ).also { this.tinter = it }
-        val tintCache = MediaTintCache(fallback = surface).also { this.tintCache = it }
-        view.background = tinter.drawable
+        val root = view as ConstraintLayout
 
         vm.uiState.observe(viewLifecycleOwner) { s ->
-            // AC5 empty state: title shows "Nothing playing", artist blank.
-            title.text = if (s.isEmpty) getString(R.string.media_no_app) else s.title.orEmpty()
-            artist.text = if (s.isEmpty) "" else s.artist.orEmpty()
-
-            playPause.setImageResource(
-                if (s.playing) R.drawable.ic_pause else R.drawable.ic_play
-            )
-
-            // AC1: rounded-corner album art. Re-load only on bitmap-reference change so
-            // the 250 ms position ticker (which re-emits identical art) doesn't re-trigger
-            // Glide and cause flicker.
-            val newArt = s.art
-            if (newArt !== lastArtRef) {
-                lastArtRef = newArt
-                if (newArt != null) {
-                    Glide.with(this)
-                        .load(newArt)
-                        .apply(glideOptions)
-                        .placeholder(R.drawable.bg_album)
-                        .into(art)
-                } else {
-                    Glide.with(this).clear(art)
-                    art.setImageResource(R.drawable.bg_album)
+            val empty = s.isEmpty
+            if (empty != lastEmpty) {
+                applyLayout(root, empty)
+                lastEmpty = empty
+            }
+            title.visibility = if (empty) View.GONE else View.VISIBLE
+            val desired = if (empty) null else s.title.orEmpty()
+            if (desired != lastTitleApplied) {
+                lastTitleApplied = desired
+                title.text = desired.orEmpty()
+                if (!empty) {
+                    title.isSelected = false
+                    title.isSelected = true
                 }
-                // T1.18: resolve dominant colour (cache hit short-circuits Palette;
-                // null art / empty state delivers fallback synchronously) and animate.
-                // The StateFlow value carries packageName + album needed for the cache
-                // key — LiveData ticks with positionMs only ever lag the StateFlow, so
-                // the source-of-truth state at observe time matches `s` track-wise.
-                tintCache.resolve(App.media.state.value) { color -> tinter.animateTo(color) }
             }
-
-            // AC3: seek bar bound directly to the StateFlow's position — repo's
-            // 250 ms ticker advances it without any view-side timer.
-            if (s.durationMs > 0) {
-                bar.max = s.durationMs.toInt()
-                bar.progress = s.positionMs.coerceIn(0, s.durationMs).toInt()
-            } else {
-                bar.max = 1
-                bar.progress = 0
-            }
+            playPause.setImageResource(if (s.playing) R.drawable.ic_pause else R.drawable.ic_play)
         }
 
-        playPause.setOnClickListener { vm.togglePlay() }
-        prev.setOnClickListener { vm.prev() }
-        next.setOnClickListener { vm.next() }
-    }
-
-    override fun onDestroyView() {
-        tinter?.cancel()
-        tinter = null
-        tintCache = null
-        super.onDestroyView()
-    }
-
-    private fun resolveColorSurface(view: View): Int {
-        val tv = TypedValue()
-        val resolved = view.context.theme.resolveAttribute(
-            com.google.android.material.R.attr.colorSurface, tv, true,
-        )
-        return if (resolved && tv.resourceId != 0) {
-            ContextCompat.getColor(view.context, tv.resourceId)
-        } else if (resolved) {
-            tv.data
-        } else {
-            ContextCompat.getColor(view.context, R.color.card)
+        playPause.setOnClickListener {
+            if (lastEmpty) dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) else vm.togglePlay()
         }
+        prev.setOnClickListener {
+            if (lastEmpty) dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_PREVIOUS) else vm.prev()
+        }
+        next.setOnClickListener {
+            if (lastEmpty) dispatchMediaKey(KeyEvent.KEYCODE_MEDIA_NEXT) else vm.next()
+        }
+    }
+
+    private fun applyLayout(root: ConstraintLayout, empty: Boolean) {
+        val set = ConstraintSet().apply { clone(root) }
+        set.setVerticalBias(R.id.transport, if (empty) 0.5f else 0.6f)
+        set.applyTo(root)
+    }
+
+    private fun openFullPlayer() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(android.R.id.content, PlayerHostFragment())
+            .addToBackStack("player")
+            .commit()
+    }
+
+    private fun dispatchMediaKey(keyCode: Int) {
+        val am = requireContext().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val now = SystemClock.uptimeMillis()
+        am.dispatchMediaKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0))
+        am.dispatchMediaKeyEvent(KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 0))
     }
 }
-

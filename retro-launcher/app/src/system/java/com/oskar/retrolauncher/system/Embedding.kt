@@ -68,10 +68,13 @@ class Embedding(private val ctx: Context) : EmbeddingContract {
 
     override fun launch(intent: Intent) {
         val displayId = virtualDisplay?.display?.displayId ?: return
-        val opts = ActivityOptions.makeBasic()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            opts.setLaunchDisplayId(displayId)
-        }
+        // setLaunchDisplayId was added in API 26 (Oreo). Without it, startActivity
+        // launches on the default display = the embedded app takes over the main
+        // screen full-screen, which is what the user saw before this guard.
+        // On API 23-25 we cannot embed; bail out silently and let the placeholder
+        // explain the limitation (see EmbedFragment).
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val opts = ActivityOptions.makeBasic().setLaunchDisplayId(displayId)
         ctx.startActivity(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             opts.toBundle(),

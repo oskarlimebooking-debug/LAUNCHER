@@ -29,6 +29,32 @@
             android:entries="@array/grid_cols_entries"
             android:entryValues="@array/grid_cols_values"
             android:defaultValue="4" />
+        <ListPreference
+            android:key="rail_icon_size"
+            android:title="@string/pref_rail_icon_size"
+            android:entries="@array/rail_icon_size_entries"
+            android:entryValues="@array/rail_icon_size_values"
+            android:defaultValue="72" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_media">
+        <SwitchPreferenceCompat
+            android:key="full_player"
+            android:title="@string/pref_full_player"
+            android:summary="@string/pref_full_player_summary"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="media_card_size"
+            android:title="@string/pref_media_card_enlarge"
+            android:summary="@string/pref_media_card_enlarge_summary"
+            android:dependency="full_player"
+            android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="media_replaces_weather"
+            android:title="@string/pref_media_replaces_weather"
+            android:summary="@string/pref_media_replaces_weather_summary"
+            android:dependency="media_card_size"
+            android:defaultValue="false" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/pref_trip">

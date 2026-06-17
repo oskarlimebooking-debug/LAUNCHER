@@ -1,0 +1,49 @@
+id: plan-2026-05-android-6-crash-audit
+title: Android 6 (API 23) Crash Audit & Fix
+type: bugfix
+status: in_progress
+created_at: '2026-05-15T12:00:00.000000'
+sprint: 2
+description: "Systematic audit of retrofit-launcher for Android 6 (API 23) crash risks,\n\
+  followed by targeted fixes. The app runs fine on newer devices but may crash\non\
+  \ API 23 head units due to unguarded API 26+ calls, installation-time\nclass verification,\
+  \ or desugaring gaps in release builds.\n\nKey finding from initial exploration:\n\
+  - Embedding.kt:70-71 calls ActivityOptions.setLaunchDisplayId() (API 26)\n  without\
+  \ any Build.VERSION.SDK_INT guard. NoSuchMethodError on API 23.\n- Release builds\
+  \ with minifyEnabled may strip desugared JDK classes.\n- No crash barriers exist\
+  \ in the API 23 code path to prevent silent\n  failures from becoming user-visible\
+  \ crashes.\n"
+phases:
+- id: 1
+  name: Critical fix — Embedding.kt API guard
+  tasks: 1
+  complexity: 5
+- id: 2
+  name: Systematic API 23 compatibility audit
+  tasks: 3
+  complexity: 22
+- id: 3
+  name: Build hardening & testing
+  tasks: 2
+  complexity: 14
+totals:
+  tasks: 6
+  complexity: 41
+  human_gated: 1
+  external_tools: 1
+priorities:
+  P0: 1
+  P1: 3
+  P2: 2
+skills:
+- implementing-with-tdd
+- reviewing-code
+notes: 'Android 6 (API 23) ART uses hybrid execution (interpreter + JIT) by default,
+
+  so unguarded API calls fail at runtime when the specific code path is hit,
+
+  not at install time. However, platform-signed system builds may behave
+
+  differently depending on the ROM''s compiler filter.
+
+  '

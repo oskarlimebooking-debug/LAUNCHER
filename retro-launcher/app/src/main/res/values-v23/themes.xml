@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      T2.7 follow-up — Android 6 head unit (alps/A6_series) crashes inflating
+      Material 3 TextViews: AppCompatTextHelper reads `app:fontFamily` from the
+      Material textAppearance defaults via TypedArray.getString(), but on this
+      ROM the font-resource ID gets interpreted as a string-pool index and
+      blows up StringBlock.get (`length=45; index=1265`). Wrapping the inflater
+      can't help — the crash is inside the AppCompat helper which is shared by
+      MaterialTextView and AppCompatTextView alike.
+
+      Workaround: on API 23-25, base the launcher theme on Theme.AppCompat
+      (no font-resource refs in its textAppearance styles). values-v26 puts
+      Material 3 back for modern APIs. Variants in values/themes.xml inherit
+      from whichever Theme.RetroLauncher is in scope at runtime, so they pick
+      this parent automatically.
+    -->
+    <style name="Theme.RetroLauncher" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorOnPrimary">@color/text_primary</item>
+        <item name="colorSurface">@color/card</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- Plain font family string (not a @font/... resource ref). -->
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+</resources>

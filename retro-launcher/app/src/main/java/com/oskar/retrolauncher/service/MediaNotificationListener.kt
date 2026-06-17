@@ -47,7 +47,14 @@ class MediaNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         try {
-            sessionManager.addOnActiveSessionsChangedListener(sessionsListener, componentName)
+            // T2.7-followup — onListenerConnected runs on a Binder thread with no
+            // Looper. The 2-arg addOnActiveSessionsChangedListener overload tries
+            // to derive a Handler from the current thread and crashes with
+            // "Can't create handler inside thread that has not called
+            // Looper.prepare()" on API 23. Pass an explicit main-looper Handler.
+            sessionManager.addOnActiveSessionsChangedListener(
+                sessionsListener, componentName, Handler(Looper.getMainLooper()),
+            )
             rebind(sessionManager.getActiveSessions(componentName))
         } catch (t: Throwable) {
             Timber.w(t, "addOnActiveSessionsChangedListener failed")
@@ -68,10 +75,16 @@ class MediaNotificationListener : NotificationListenerService() {
     }
 
     private fun rebind(sessions: List<MediaController>) {
-        val playing = sessions.firstOrNull {
-            it.playbackState?.state == PlaybackState.STATE_PLAYING
-        }
-        val newCtrl = playing ?: sessions.firstOrNull()
+        // When the built-in player is enabled, a playing session owned by the
+        // launcher itself wins the tiebreak so local playback reliably binds —
+        // otherwise the original "first playing, else first" policy applies.
+        val preferOwn = runCatching { App.settings.fullPlayerMode }.getOrDefault(false)
+        val newCtrl = pickSession(
+            sessions = sessions,
+            isPlaying = { it.playbackState?.state == PlaybackState.STATE_PLAYING },
+            isOwn = { it.packageName == packageName },
+            preferOwn = preferOwn,
+        )
         if (newCtrl?.sessionToken == activeController?.sessionToken) {
             pushState()
             return

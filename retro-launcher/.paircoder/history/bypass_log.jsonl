@@ -2,3 +2,5 @@
 {"timestamp": "2026-05-09T15:37:53.023555", "command": "task_done --allow-dirty", "task_id": "T1.20", "reason": "Uncommitted changes in working tree"}
 {"timestamp": "2026-05-11T00:03:48.362596", "command": "task_done --allow-dirty", "task_id": "T1.31", "reason": "Uncommitted changes in working tree"}
 {"timestamp": "2026-05-11T08:38:31.453335", "command": "task_done --allow-dirty", "task_id": "T1.36", "reason": "Uncommitted changes in working tree"}
+{"timestamp": "2026-05-15T23:06:56.815839", "command": "task_done --allow-dirty", "task_id": "T2.1", "reason": "Uncommitted changes in working tree"}
+{"timestamp": "2026-05-15T23:06:56.820719", "command": "task update --local-only", "task_id": "T2.1", "reason": "Pre-existing dirty files unrelated to T2.1; fix committed in 8749062"}

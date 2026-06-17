@@ -1,13 +1,12 @@
 # Current State
 
-> Last updated: 2026-05-14 (T1.44 done — system flavor scaffolding, platform signing config, docs)
+> Last updated: 2026-06-10 (Sprint 3 — Music Player + Dashboard: COMPLETE, all 8 milestones M0/A.2/M1/M2/M3/M4/M5/A.1. Full in-launcher Media3 music player + driving dashboard. Release APK builds (3.5 MB), unit suite green. Remaining: on-device verification + refresh stale instrumented tests. Plan: /Users/oskarsokolov/.claude/plans/smooth-giggling-wand.md)
 
 ## Active Plan
 
 **Plan:** plan-2026-05-retro-launcher-sprint-1 — Retro Launcher v0.1 → v0.3
-**Status:** 44/49 tasks done (Phases 1–10 complete; Phase 11 in progress: T1.44 done).
-T1.45 (next pending — Phase 11, P2 Cx 13).
-**Current Sprint:** 1 (T1.x)
+**Status:** 49/49 tasks done. Sprint 1 complete.
+**Current Sprint:** 1 (T1.x) — DONE
 **Backlog:** `plans/backlogs/backlog-sprint-1-retro-launcher.md`
 
 > Tracking note: tasks are split across two plan IDs in the CLI —
@@ -90,13 +89,38 @@ Phase 10 — v0.2 polish (5/5 done)
 - ✓ T1.42 Day/night theme variants (done 2026-05-14)
 - ✓ T1.43 Steering-wheel media key support (done 2026-05-14)
 
-Phase 11 — v0.3 system-build features (1/6 done)
+Phase 11 — v0.3 system-build features (6/6 done)
 - ✓ T1.44 System flavor scaffolding + platform signing (done 2026-05-14)
-- ⏳ T1.45–T1.49 (all P2, Cx 13/21/13/8/8)
+- ✓ T1.45 HiddenApi reflection helpers (done 2026-05-14)
+- ✓ T1.46 VirtualDisplay embedding pipeline (done 2026-05-14)
+- ✓ T1.47 Touch-event forwarding via root (done 2026-05-14)
+- ✓ T1.48 Audio focus passthrough (done 2026-05-14)
+- ✓ T1.49 EmbedFragment integration with HomeFragment (done 2026-05-14)
 
-All 49 task files exist on disk under `.paircoder/tasks/T1.{1..49}.task.md`.
-Phases 1–10 done + T1.44 (44/49). Continue with `/start-task T1.45`
-(Phase 11, P2 Cx 13).
+All 49 task files exist on disk. Sprint 1 complete.
+
+---
+
+**Plan:** plan-2026-05-android-6-crash-audit — Android 6 (API 23) Crash Audit & Fix
+**Status:** planned (pending start)
+**Sprint:** 2 (bugfix)
+**Backlog:** N/A (created directly from investigation)
+
+Phase 1 — Critical fix: Embedding.kt API guard (1/1 done)
+- [x] T2.1 Guard setLaunchDisplayId() with SDK version check (P0, Cx 3) — DONE 2026-05-15
+
+Phase 2 — Systematic API 23 compatibility audit (3/3 done)
+- [x] T2.2 Systematic API 23 compatibility audit of all source files (P1, Cx 8) — DONE 2026-05-15
+- [x] T2.3 Verify ProGuard/R8 keeps desugared JDK classes in release builds (P1, Cx 5) — DONE 2026-05-15
+- [x] T2.6 Add API 23-specific crash barrier in App.onCreate() (P2, Cx 3) — DONE 2026-05-15
+
+Phase 3 — Build hardening & testing (2/2 done)
+- [x] T2.4 Run full test suite on API 23 emulator/device (P1, Cx 6) — DONE 2026-05-16
+- [x] T2.5 Manual smoke test on API 23 — install and exercise all features (P2, Cx 5, human-gated) — DONE 2026-05-16
+
+Phase 4 — Field crash follow-up (1/1 code-complete, head-unit verify pending)
+- [x] T2.7 Replace LayoutInflater wrap with viewInflaterClass for API 23 TextView crash + build release APK (P0, Cx 6) — CODE COMPLETE 2026-05-19, awaiting head-unit smoke
+Next: Sprint 2 (CAN-bus / OBD-II, voice trigger, theme auto-switch).
 
 ### Backlog
 
@@ -104,6 +128,363 @@ Future sprints (post-v0.3): CAN-bus / OBD-II integration, voice trigger via mic
 button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What Was Just Done
+
+- **Sprint 3 A.1 done (2026-06-10)** — Driving Dashboard landing page +
+  navigation reorder. **Sprint 3 (Music Player + Dashboard) is now COMPLETE:
+  M0, A.2, M1, M2, M3, M4, M5, A.1 all done.**
+  - **Dashboard (`ui/dashboard`):** `DashboardFragment` composes a self-contained
+    `DashboardClockView` (clock+date via `ClockTicker`, attach/detach lifecycle),
+    the existing `SpeedometerView` (driven by the reused `SpeedViewModel`),
+    today's drive stats (`DashboardViewModel` + pure `TodayStats.forDay` over
+    `App.trips.recentTrips`), a now-playing strip (App.media → tap opens the
+    player), and a favourites row (reuses `RailAdapter` + new `Context.launchApp`
+    util). `fragment_dashboard.xml`, `dash_today` string.
+  - **Nav reorder:** `RightPanelAdapter` → 4 pages `0=Dashboard, 1=Apps,
+    2=Trips, 3=Embed` (+`EMBED_PAGE` const). `HomeFragment` lands on page 0 and
+    its embed-lifecycle checks now key off `RightPanelAdapter.EMBED_PAGE` (the
+    0→3 shift the plan flagged as the riskiest edit); tab labels Dashboard·Apps·
+    Trips·Map.
+  - **Verify:** `TodayStatsTest` (window aggregation incl. exclusion + empty),
+    `RightPanelAdapterTest` (4 pages, embed last) green; arch clean on all 7
+    files. Fixed `DashboardViewModel` to a true no-arg ctor (default ViewModel
+    factory needs it).
+  - **FINAL GATE (all green):** `:app:assembleStandardRelease` (R8-minified)
+    builds — media3 + MusicService survive minification, no missing keep rules;
+    release APK **3.5 MB** (was ~3.3 MB → ~200 KB delta, R8 strips unused
+    ExoPlayer renderers). Full `:app:testStandardDebugUnitTest` passes.
+  - **Remaining = on-device only:** sideload `app-standard-release.apk`, grant
+    audio, scan music; verify playback/foreground notification/steering-wheel
+    keys, the player UI, the 3 settings toggles, dashboard landing, and the Room
+    v1→v2 upgrade preserving trips. Plus update the pre-existing-stale
+    instrumented tests (`MediaFragmentInstrumentedTest` refs removed `R.id.artist`;
+    `HomeFragmentInstrumentedTest` default-page now 0).
+
+- **Sprint 3 M5 done (2026-06-10)** — Settings toggles wired.
+  - **Rich media card.** `MediaFragment` now picks its layout by mode in
+    `onCreateView`: full-player → `fragment_media_rich.xml` (album art + title +
+    artist + determinate progress + transport) bound by new `MediaCardBinder`
+    to `App.player.nowPlaying` + a 1s position poll, tap → full player; simple
+    mode (`fullPlayerMode` off) → the original marquee card via `bindSimpleCard`
+    (unchanged behaviour). New string `media_tap_to_play`.
+  - **Home layout reaction.** `HomeFragment.applyMediaLayout` collects
+    `KEY_MEDIA_CARD_SIZE` + `KEY_MEDIA_REPLACES_WEATHER` and re-lays via
+    `ConstraintSet`: replace-weather → `weather_slot` GONE + media stretches to
+    the full left column; enlarge-only → `left_split` 0.50→0.62 so media gets
+    the larger share. Same mechanism as the existing panel-ratio guideline.
+  - Verify: `:app:assembleStandardDebug` + FULL unit suite pass; arch clean on
+    all 3 files.
+  - **Known follow-up (instrumented, can't run here):** `MediaFragmentInstrumentedTest`
+    is **pre-existing-stale** — it references `R.id.artist` / `media_no_app`
+    which the 0.2.2 card simplification already removed (no layout defines
+    `@+id/artist`), so the androidTest set was non-compiling before this sprint.
+    When fixing it, also force `full_player=false` (write the pref) so it
+    exercises the simple card, since full-player is now the default layout.
+
+- **Sprint 3 M4 done (2026-06-10)** — Likes + playlists.
+  `MusicLibraryRepository` (toggleLike idempotent, playlist create/rename/delete,
+  addToPlaylist appends by max-position+1, removeItem; `likedTrackIds: Flow<Set>`,
+  injectable clock) over `MusicDao` (+`isLiked`). Wired `App.musicLibrary`.
+  `LibraryViewModel` gained likedIds/playlists/likedTracks StateFlows + like/
+  playlist actions (incl. `createPlaylistAndAdd`). `SongRowAdapter` heart is now
+  live (toggle) and long-press → add-to-playlist; wired into Songs/Liked/album+
+  artist/playlist detail. New UI: `LikedFragment`, `PlaylistsFragment` +
+  `PlaylistListAdapter` (create via dialog, long-press delete), `PlaylistDetailFragment`
+  (resolves items→tracks, play-all), `PlaylistDialogs` (create + add-to-playlist
+  chooser). `LibraryFragment` now 5 tabs (Songs/Albums/Artists/Playlists/Liked).
+  Layouts (fragment_playlists, item_playlist) + strings. Verify:
+  `MusicLibraryRepositoryTest` (toggle idempotency, position append, removeItem,
+  delete cascade, rename) green; `:app:assembleStandardDebug` + FULL suite pass;
+  arch clean on all 14 files. Per-item remove/reorder in playlist detail deferred
+  (note); now-playing has no like button yet (song-row hearts cover liking).
+
+- **Sprint 3 M3 done (2026-06-10)** — Now-Playing + queue (two-pane player).
+  `PlayerController` gained `queue`/`currentIndex` StateFlows, `positionMs()`,
+  `playIndex()`, `moveQueueItem()` (pushState now also builds the queue).
+  `ui/player/nowplaying/NowPlayingViewModel` (surfaces player flows + 500ms
+  position poll), `NowPlayingFragment` (big art, title/artist, draggable seek
+  bar with position/duration, prev/play-pause/next + queue button, "Nothing
+  playing" placeholder), `ui/player/queue/QueueFragment` + `QueueAdapter`
+  (tap-to-jump, accent-highlighted current entry). `PlayerHostFragment` is now a
+  **two-pane** layout — now-playing (42%) on the left, library on the right —
+  using the head unit's wide landscape. Shared `ui/player/PlaybackFormat.formatTime`
+  (m:ss / h:mm:ss) replaces SongRowAdapter's private formatter. New layouts
+  (now-playing, queue, item_queue), `ic_queue`, strings. Verify:
+  `PlaybackFormatTest` green; `:app:assembleStandardDebug` + FULL suite pass;
+  arch clean on all 8 files. Queue drag-reorder deferred (tap-to-jump for now);
+  like button still hidden until M4.
+
+- **Sprint 3 M2 done (2026-06-10)** — Local music library + browse UI.
+  - **Data (`data/music`):** `MediaStoreQueries` (pure projection/selection/sort
+    + cursor→Track and album/artist derivation, MatrixCursor-testable),
+    `AlbumArtUris` (content-uri builders), `MusicScanState` (sealed),
+    `LocalMusicRepository` (single MediaStore.Audio scan on IO, caches +
+    StateFlows for songs/albums/artists, `tracksForAlbum/Artist`, graceful
+    permission-denied path). `Permissions.hasAudioRead`/`audioReadPermission`
+    (READ_MEDIA_AUDIO on 33+, READ_EXTERNAL_STORAGE below). Wired
+    `App.localMusic`/`ServiceLocator.localMusic`.
+  - **PlayerController fix:** `playTracks` now holds the request and flushes it
+    when the async `MediaController` connects (was a no-op before connect).
+  - **UI (`ui/player`):** `PlayerHostFragment` (full-screen overlay, audio-perm
+    gate w/ ActivityResult, close via explicit X since the launcher swallows
+    system back), `library/LibraryFragment` (Songs/Albums/Artists tabs via
+    TabLayout+ViewPager2), generic `MusicBrowseFragment` (per-section list/grid),
+    `TrackListFragment` (album/artist detail + play-all), `LibraryViewModel`,
+    `SongRowAdapter`/`AlbumGridAdapter`/`ArtistListAdapter`, `MusicArtGlideExt`
+    (`ImageView.loadAlbumArt`). Tapping a song/album/artist plays via
+    `PlayerController`. **Entry point:** tapping the media card opens the player
+    overlay when `fullPlayerMode` is on (`MediaFragment.openFullPlayer`).
+  - **Resources:** 7 layouts (player host/library/browse/track-list + song/album/
+    artist rows), drawables (ic_close, ic_album_placeholder, ic_heart[_filled]),
+    strings. SongRow heart is wired-but-hidden until M4.
+  - **Verify:** `MediaStoreQueriesTest` (MatrixCursor mapping + derivation),
+    `AlbumArtUrisTest`, `LocalMusicRepositoryTest` (perm-denied + empty-store
+    Done(0)) green; `:app:assembleStandardDebug` + FULL unit suite pass; arch
+    check clean on all 16 touched/new source files.
+  - **On-device gate (M1+M2 together):** sideload, grant audio, scan a populated
+    music dir, tap a song → audio out + the existing card/steering-wheel keys
+    reflect/drive local playback; browse albums/artists; play-all.
+
+- **Sprint 3 M1b done (2026-06-10)** — Music engine + session plumbing (M1
+  complete). `service/MusicService.kt` (Media3 `MediaLibraryService` wrapping
+  `ExoPlayer` with audio-focus + becoming-noisy handling, publishing a
+  `MediaLibrarySession`), `service/MusicLibrarySessionCallback.kt`
+  (`onAddMediaItems` → `MediaItemFactory.resolve` so binder-stripped items become
+  playable; browse tree deferred to M2), `data/music/PlayerController.kt`
+  (main-thread `MediaController` bridge: `initialize`/`release`/`playTracks`/
+  transport, `nowPlaying: StateFlow<NowPlaying?>`), `data/music/PlayerUiState.kt`
+  (`NowPlaying`/`QueueItem`). Manifest: `MusicService` (`mediaPlayback`,
+  exported) + FOREGROUND_SERVICE_MEDIA_PLAYBACK + READ_EXTERNAL_STORAGE(≤32)/
+  READ_MEDIA_AUDIO. Wired `App.player`/`ServiceLocator.player`. **`:app:assembleStandardDebug`
+  compiles the whole app (manifest merge incl. the new service OK) and the FULL
+  unit suite passes — no regressions.** arch check clean on all 6 files.
+  **On-device gate (deferred to after M2 once a song can be picked):** audio
+  output, foreground notification, steering-wheel keys driving local playback.
+
+- **Sprint 3 M1a done (2026-06-10)** — Media3 foundation + session tiebreak.
+  - **Deps:** media3 1.2.1 (`media3-exoplayer`, `media3-session`,
+    `media3-common` only — no dash/hls/ui, to keep APK/method-count down for the
+    Cortex-A7) added to `libs.versions.toml` + `build.gradle.kts`. Verified they
+    resolve & compile online (network → Google Maven reachable).
+  - **Pure mappers:** `data/music/MusicModels.kt` (`Track`/`Album`/`Artist`,
+    no Android types), `service/MediaItemFactory.kt` (`Track`↔`MediaItem`;
+    carries the playable URI in BOTH localConfiguration and
+    `requestMetadata.mediaUri` so it survives the controller→session binder,
+    with `resolve()` rebuilding a stripped item — the contract `onAddMediaItems`
+    relies on).
+  - **Keystone tiebreak:** `service/SessionPicker.kt` (pure generic
+    `pickSession`) wired into `MediaNotificationListener.rebind()`. When
+    `fullPlayerMode` is on, a *playing* session owned by the launcher itself
+    wins selection, so local playback deterministically binds even when an
+    external app also posts a session; default "first-playing-else-first" policy
+    otherwise. Inert until M1b produces a session.
+  - **Tests (TDD, green):** `MediaItemFactoryTest` (id/metadata mapping, uri
+    survives binder, resolve rebuilds, trackId round-trip),
+    `SessionPickerTest` (empty, default policy, preferOwn wins for our playing
+    session, doesn't steal focus when ours is paused). arch check clean on all
+    4 touched/new source files.
+  - **Next (M1b):** `MusicService` (MediaLibraryService + ExoPlayer +
+    MediaLibrarySession), `MusicLibrarySessionCallback` (onAddMediaItems →
+    `MediaItemFactory.resolve`), `PlayerController` (MediaController bridge),
+    `<service>` manifest entry + FOREGROUND_SERVICE/READ_MEDIA perms,
+    ServiceLocator/App wiring. Then sideload + verify audio output, foreground
+    notification, and steering-wheel keys on the head unit.
+
+- **Sprint 3 A.2 done (2026-06-10)** — Labelled tab strip navigation. New
+  `ui/home/PanelTabStrip.kt` (a `LinearLayout` of one weighted, monospace text
+  tab per page; active tab = accent + bold; tap → `pager.setCurrentItem`;
+  `attachTo(pager, labels)` mirrors the old `DotsIndicator`). Wired into
+  `HomeFragment` (labels Map · Apps · Trips for the current page order; A.1 will
+  reorder to Dashboard · Apps · Trips · Map) and `fragment_home.xml` (`@+id/dots`
+  → `@+id/panel_tabs`, 20dp → 36dp). Deleted `DotsIndicator.kt` (no other refs).
+  New strings `tab_dashboard/apps/trips/map`. Tests: `PanelTabStripTest`
+  (builds one upper-cased tab per label, re-attach rebuilds) green; existing
+  `HomeFragmentTest` + `RightPanelAdapterTest` still pass. arch check clean.
+
+- **Sprint 3 M0 done (2026-06-10)** — Scaffolding for the in-launcher music
+  player + driving dashboard (plan:
+  `/Users/oskarsokolov/.claude/plans/smooth-giggling-wand.md`, 8 milestones).
+  This milestone is the additive data/config foundation:
+  - **Room v2 + migration.** New `data/music/MusicEntities.kt`
+    (`LikedTrack` by MediaStore audio id, `Playlist`, `PlaylistItem` with
+    CASCADE FK + index), `MusicDao.kt` (likes + playlist CRUD, 13 methods),
+    `MusicMigrations.kt` (`MIGRATION_1_2`). `AppDb` bumped 1→2, adds
+    `music()`; migration wired via `Room.databaseBuilder(...).addMigrations(MIGRATION_1_2)`
+    in `ServiceLocator`. The migration is **non-destructive** — only
+    `CREATE TABLE`s the 3 new tables, so recorded trips survive the upgrade.
+  - **Settings.** 3 read-only flags + Flows in `SettingsStore`
+    (`fullPlayerMode` default **true**, `mediaCardEnlarged`,
+    `mediaReplacesWeather`) driven by `SwitchPreferenceCompat` (no setters →
+    keeps the file under the arch function-count limit). New "Music & media"
+    `PreferenceCategory` in `preferences.xml` (dependency-chained) + strings.
+  - **Tests (TDD, all green).** `MusicDaoTest` (like toggle idempotency,
+    playlist create/rename/delete, item ordering + max position, FK cascade),
+    `MusicMigrationTest` (byte-matches the hand-written migration SQL against
+    Room's generated v2 `sqlite_master` schema for all 3 tables + index, and
+    asserts a seeded trip row survives 1→2), `SettingsStoreMediaTest`
+    (defaults + flow emission). `:app:testStandardDebugUnitTest` for the 3
+    classes passes; `bpsai-pair arch check` clean on all 6 touched/new source files.
+  - **Deferred to M1:** the media3 (ExoPlayer + media3-session) Gradle deps —
+    added when the engine code (`MusicService`) first uses them, so M0 stays
+    additive and offline-verifiable.
+  - **Next:** A.2 (PanelTabStrip nav) then M1 (MusicService + MediaSession that
+    flows back through the existing `MediaNotificationListener` so the current
+    card + steering-wheel keys drive local playback).
+
+- **T2.7 code complete (2026-05-19)** — head unit crash log identified
+  `MaterialComponentsViewInflater.createTextView()` throwing
+  `ArrayIndexOutOfBoundsException: length=45; index=1264` inside
+  `StringBlock.get` during `WeatherFragment` inflation. The existing
+  `SafeInflaterFactory` + `MainActivity.getLayoutInflater()` wrap never
+  installed — every attempt in the log shows `IllegalStateException:
+  A factory has already been set on this LayoutInflater` because API 23
+  permanently locks `LayoutInflater.setFactory2()` after the first call,
+  and `AppCompatActivity.super.onCreate()` claims that slot first.
+  - **Switched substitution mechanism**: new
+    `SafeMaterialComponentsViewInflater` extends
+    `MaterialComponentsViewInflater`, wraps each `create*View` in
+    try/catch for `ArrayIndexOutOfBoundsException`, falls back to the
+    plain `AppCompat*` widget on the bad path.
+  - Wired via `viewInflaterClass` attribute on `Theme.RetroLauncher` —
+    AppCompatDelegate instantiates the class before factory2 is locked,
+    so substitution is guaranteed on API 23.
+  - Removed dead code: `SafeInflaterFactory.kt`, its test,
+    `MainActivity.getLayoutInflater()` override, and
+    `MainActivity.wrapLayoutInflaterFactory()`.
+  - Added R8 `-keep` rule for the inflater FQN (loaded by
+    `Class.forName` from the theme); verified the FQN survives in
+    `classes.dex`.
+  - 2 new Robolectric tests (`SafeMaterialComponentsViewInflaterTest`,
+    `@Config(sdk=[23])`): AIOOBE fallback returns plain `AppCompatTextView`;
+    non-AIOOBE propagates. Both pass.
+  - Bumped `versionCode 1 → 2`, `versionName 0.1.0 → 0.1.1`.
+  - Release APK built at
+    `retro-launcher/app/build/outputs/apk/standard/release/app-standard-release.apk`
+    (3.3 MB, R8-minified, signed with debug key per existing release setup).
+  - Also unblocked the unit-test compile by adding
+    `testImplementation(libs.androidx.test.core.ktx)` — three
+    pre-existing tests (`AppCrashBarrierTest`, `ThemeVariantsTest`,
+    `EmbedFragmentTest`) referenced `androidx.test.core.app.ApplicationProvider`
+    without declaring the dependency; standard release tests never
+    compiled clean against HEAD.
+  - 5 pre-existing test failures (`MediaRepositoryTest` ×1,
+    `HiddenApiTest` ×4) fail on both debug and release variants without
+    T2.7 changes; they are out of T2.7 scope.
+  - **Awaiting head-unit verification** — sideload
+    `app-standard-release.apk`, launch, confirm no `Uncaught exception
+    on API 23` in logcat and that Home/Weather/StatusBar fragments
+    render. After confirmation, mark the final AC checked and close T2.7.
+
+- **On-device diagnostics added (2026-05-18)** — user reported the head unit still crashes
+  despite T2.1/T2.6 fixes. Without logs we can't tell where, so:
+  - `diag/FileLogger.kt` — Timber tree writing rotating log files
+    (`launcher.log` + `launcher.log.1`, rotation at 256 KB)
+  - `diag/CrashHandler.kt` — `UncaughtExceptionHandler` that dumps a
+    `crash-<timestamp>.txt` (device + build info + full stack trace) before
+    delegating to the previous handler; keeps the 10 most recent
+  - `diag/LogPaths.kt` — picks `getExternalFilesDir(null)/logs/` so files
+    are pullable via `adb pull /sdcard/Android/data/<app-id>/files/logs/`
+    on API 23 with no runtime permission
+  - **Crash barrier is now always-on** (was `BuildConfig.DEBUG`-only).
+    Release APKs shipped to the head unit will now leave crash traces.
+  - Hardened `MainActivity.wrapLayoutInflaterFactory()` — null-safe + catches
+    `IllegalStateException` (API 23's `setFactory2` throws if a factory is
+    already locked in; previous code would `!!` NPE or crash silently)
+  - Added Timber breadcrumbs through `App.onCreate`, `MainActivity.onCreate`,
+    and every `ServiceLocator.startup()` step — disk log now shows how far
+    startup got before death
+  - 14 new unit tests (`FileLoggerTest`, `CrashHandlerTest`), all pass.
+    Total 433/438 pass (5 pre-existing failures unrelated).
+  **To extract logs after the next crash:**
+  `adb pull /sdcard/Android/data/com.oskar.retrolauncher/files/logs/`
+
+- **T2.6 done (2026-05-15)** — Added crash barrier in `App.onCreate()`. Debug builds install
+  an uncaught exception handler that logs `NoSuchMethodError`/`NoClassDefFoundError` via
+  Timber and shows a Toast before re-throwing. Gated behind `BuildConfig.DEBUG`.
+  Commit: ce85fbd.
+
+- **T2.3 done (2026-05-15)** — Verified ProGuard/R8 desugaring in release builds.
+  Standard release APK assembled, dex inspected. No `j$/time/`, `j$/util/Optional`, or
+  `j$/util/stream/` classes present — code doesn't use these APIs so R8 correctly stripped
+  them. No risk of `NoClassDefFoundError` from desugared class stripping. META-INF
+  services clean (coroutines + obfuscated Glide/Room registrations — all API 23 safe).
+
+- **T2.5 done (2026-05-16)** — Manual smoke test complete on API 23 ARM64 emulator.
+  **Found an additional crash not caught by the initial audit:** `MaterialComponentsViewInflater`
+  throws `ArrayIndexOutOfBoundsException` (length=45; index=1264) when inflating TextViews
+  on API 23 with Material 1.11.0. This is a Material Components library bug, not our code.
+  **Fix:** `SafeInflaterFactory` wraps the LayoutInflater factory to catch this error and
+  fall back to standard Android view creation. Commit: 2fe9f60.
+
+- **T2.4 done (2026-05-16)** — Instrumented tests run on API 23 (ARM64) emulator. 16 tests
+  executed, 11 passed, 5 failed. All 5 failures analyzed: 3 test-environment issues
+  (system app count ≠ expected on clean emulator), 1 layout-timing difference
+  (SpeedometerView 3 vs 50), 1 JUnit method validation bug (return type, any API level).
+  **Zero API 23 compatibility crashes.** No NoSuchMethodError, NoClassDefFoundError,
+  or VerifyError. All fragment types (Home, Media, Speed, Weather, AppGrid, Trips)
+  instantiate and render without crashing on Android 6.
+
+- **T2.2 done (2026-05-15)** — Systematic API 23 compatibility audit complete.
+  **Findings:**
+  - **P0 (1 fixed):** `Embedding.kt:71` `setLaunchDisplayId()` unguarded → fixed in T2.1
+  - **Properly guarded (6):** `NotificationChannel` (LocSvc:89), `PictureInPictureParams`
+    (AppGrid:121-128), `ACTION_MANAGE_DEFAULT_APPS` (Wizard:185), `MediaStore.Downloads`
+    (GpxExporter:42/58/62), legacy `requestAudioFocus()` intentional, `getColor(int,Theme?)`
+    at minSdk boundary
+  - **Graceful degradation (4):** `HiddenApi.setDisplayId()`, `getTasks()`, `getDisplayManager()`,
+    `injectInputEvent()` — all reflection-wrapped in try-catch
+  - **Manifest safe (3):** `supportsPictureInPicture`, `resizeableActivity`, adaptive icons
+    in `-v26` qualified directories
+  - **Libraries:** All dependencies (AndroidX, Room, WorkManager, Glide, Moshi, Coroutines,
+    OkHttp, osmdroid) support API 14-21 minimum — no API 23 conflicts
+  - **META-INF:** Only coroutines + obfuscated library service registrations — all safe
+  - **Result: No P0/P1 issues remain unaddressed.**
+
+- **T2.1 done (2026-05-15)** — Guarded `setLaunchDisplayId()` with SDK version check.
+  Added `if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)` in `Embedding.kt:72`
+  so `ActivityOptions.setLaunchDisplayId()` (API 26) is never called on API 23-25.
+  Wrote `EmbeddingTest.kt` with 3 Robolectric tests covering API 23, 26, and 28.
+  Standard build unaffected (Embedding is system-flavor-only). Commit: 8749062.
+
+- **Bugfix plan created (2026-05-15)** — Android 6 (API 23) crash audit and fix.
+  Ran `/pc-plan` to systematically investigate crash risks on Android 6.
+  **Key finding:** `Embedding.kt:71` calls `ActivityOptions.setLaunchDisplayId()`
+  (API 26) without a `Build.VERSION.SDK_INT` guard → `NoSuchMethodError` on
+  API 23. Other API 24+ usages (NotificationChannel, PictureInPictureParams,
+  GpxExporter, WizardActivity) are already properly guarded. Desugaring is
+  enabled but needs release-build verification. Plan created with 6 tasks
+  (T2.1–T2.6) across 3 phases. Plan file:
+  `.paircoder/plans/plan-2026-05-android-6-crash-audit.plan.yaml`
+
+- **T1.49 done** (auto-updated by hook)
+
+- **T1.49 done** — Sprint 1 complete (49/49 tasks)! 
+
+- **T1.48 done** (auto-updated by hook)
+
+- **T1.48 done** (auto-updated by hook)
+
+- **T1.47 done** (auto-updated by hook)
+
+- **T1.46 done** (auto-updated by hook)
+
+- **T1.45 done** (auto-updated by hook)
+
+- **T1.46 done (2026-05-14)** — VirtualDisplay embedding pipeline. Created
+  `Embedding.kt` (system flavor, per spec §13.3) managing VirtualDisplay
+  lifecycle bound to a `TextureView` in `EmbedFragment`. Routes app launches
+  via `ActivityOptions.makeBasic().setLaunchDisplayId()`. Forward touch
+  through `HiddenApi.injectInputEvent(displayId)`. `EmbedFragment` uses
+  `BuildConfig.ENABLE_EMBEDDING` + `Class.forName` for cross-flavor compat.
+  Clean destroy on `onPause`. 5 tests (layout + fragment lifecycle).
+
+- **T1.45 done (2026-05-14)** — HiddenApi reflection helpers. Created
+  `HiddenApi.kt` (system flavor only) wrapping reflection access to
+  `WindowManagerGlobal`, `IInputManager`, and `ActivityManagerNative` via
+  `Class.forName` + `Method.invoke` with `Log.w` fallback. Each helper logs
+  its hidden-API dependency at call time. Injectable `ClassProvider` interface
+  enables testing. `HiddenApiTest.kt` uses `FakeClassProvider` to verify
+  graceful degradation on missing classes. No `MetaReflection` or
+  anti-detection schemes.
 
 - **T1.44 done (2026-05-14)** — System flavor scaffolding + platform signing.
   Created `app/src/system/` source set with platform-only AndroidManifest
@@ -1870,19 +2251,20 @@ button, day/night theme auto-switch from sun position. See spec section 21.4.
 
 ## What's Next
 
-1. **T1.42** — Phase 10 (polish), P2 Cx 5. Run via `/start-task T1.42`.
-2. **T1.36 follow-ups (out-of-scope this commit)** — wire `connectedStandardDebugAndroidTest`
-   into a CI workflow with an API 23 emulator (workflow file does not yet
-   exist under `.github/`); upload `screenshots/` from the test apk's
-   externalCacheDir as an artifact on failure; consider replacing
-   deprecated `androidx.test.runner.screenshot.Screenshot` with
-   `UiDevice.takeScreenshot` once uiautomator is added.
-2. Heads-up gates later in sprint: **T1.38** (rooted-install script — needs an
-   ADB-reachable rooted HU) and **T1.44** (platform signing — needs ROM extract
-   for `platform.x509.pem` / `platform.pk8`) will pause for manual action.
-5. Phases 10–11 (T1.39–T1.49) are v0.2/v0.3 polish and the system-flavor
-   embedding pipeline; the deepest dep chain bottoms out at T1.49 → T1.48 →
-   … → T1.43, all gated on T1.44 platform signing for the system flavor.
+1. **Sideload `app-standard-release.apk` (versionCode=2, 0.1.1) on the
+   API 23 head unit** and verify it launches past `MainActivity` with no
+   `Uncaught exception on API 23` in logcat. Path:
+   `retro-launcher/app/build/outputs/apk/standard/release/app-standard-release.apk`.
+   On success, mark the final T2.7 AC checked and run `task update T2.7
+   --status done`.
+2. **Next sprint** — CAN-bus/OBD-II, voice trigger, theme auto-switch.
+3. **CI integration** — Add API 23 emulator test to CI pipeline (emulator
+   headless runner on ARM64 host).
+
+Sprint 1: complete. Bugfix plan: 7/7 code-complete (T2.1-T2.6 + T2.7 awaiting
+head-unit verification). Crashes addressed on API 23:
+- Embedding.setLaunchDisplayId (NoSuchMethodError) — T2.1
+- MaterialComponentsViewInflater (ArrayIndexOutOfBoundsException in M3 1.11.0) — T2.7
 
 ### Dev-env note (2026-05-05)
 

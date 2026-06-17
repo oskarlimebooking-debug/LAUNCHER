@@ -8,6 +8,8 @@
     <string name="pref_embed_app">Embedded app</string>
     <string name="pref_embed_app_summary">App to launch into the virtual display</string>
     <string name="embed_upgrade_placeholder">Embedding requires system flavor</string>
+    <string name="embed_no_app_configured">Pick an embed app in Settings → Embedded app</string>
+    <string name="embed_requires_api_26">Embedded display requires Android 8.0+\n(this unit runs Android 6.0)</string>
 
     <!-- Status bar -->
     <string name="status_drawer_cd">App drawer</string>
@@ -33,7 +35,16 @@
 
     <!-- Trips -->
     <string name="trips_title">Trip History</string>
-    <string name="trips_none">No trips</string>
+    <string name="trips_none">No trips recorded yet</string>
+    <string name="trips_recent_header">Recent trips</string>
+    <string name="trips_status_recording">Recording</string>
+    <string name="trips_status_last">Last trip</string>
+    <string name="trips_status_idle">Idle · drive to start</string>
+    <string name="trips_stat_distance">Distance</string>
+    <string name="trips_stat_duration">Duration</string>
+    <string name="trips_stat_avg">Avg speed</string>
+    <string name="trips_stat_max">Max speed</string>
+    <string name="trips_week_summary_fmt">7d · %1$s · %2$d trips</string>
     <string name="trip_active_fmt">Trip %1$s · %2$s · %3$s avg</string>
     <string name="trips_summary_fmt">%1$d trips · %2$s this %3$s</string>
 
@@ -90,7 +101,50 @@
     <string name="pref_panel_ratio">Right panel width (%)</string>
     <string name="pref_grid_cols">App grid columns</string>
     <string name="pref_grid_rows">App grid rows</string>
+    <string name="pref_rail_icon_size">Pinned app size</string>
     <string name="pref_theme">Theme</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_apps">Apps</string>
+    <string name="tab_trips">Trips</string>
+    <string name="tab_map">Map</string>
+
+    <!-- Music player -->
+    <string name="music_player_title">Music</string>
+    <string name="music_tab_songs">Songs</string>
+    <string name="music_tab_albums">Albums</string>
+    <string name="music_tab_artists">Artists</string>
+    <string name="music_no_tracks">No music found on this device</string>
+    <string name="music_permission_body">Allow access to your audio to use the built-in player.</string>
+    <string name="music_grant">Grant access</string>
+    <string name="music_play_all">Play all</string>
+    <string name="music_artist_meta">%1$d albums · %2$d songs</string>
+    <string name="player_close_cd">Close</string>
+    <string name="music_album_art_cd">Album art</string>
+    <string name="music_like_cd">Like</string>
+    <string name="music_nothing_playing">Nothing playing</string>
+    <string name="music_queue_title">Up next</string>
+    <string name="music_queue_empty">The queue is empty</string>
+    <string name="music_queue_cd">Queue</string>
+    <string name="music_tab_playlists">Playlists</string>
+    <string name="music_tab_liked">Liked</string>
+    <string name="music_no_liked">No liked songs yet</string>
+    <string name="music_no_playlists">No playlists yet</string>
+    <string name="music_new_playlist">New playlist</string>
+    <string name="music_create">Create</string>
+    <string name="music_playlist_name_hint">Playlist name</string>
+    <string name="music_add_to_playlist">Add to playlist</string>
+    <string name="music_delete">Delete</string>
+    <string name="music_delete_playlist_confirm">Delete this playlist?</string>
+    <string name="media_tap_to_play">Tap to choose music</string>
+    <string name="dash_today">TODAY</string>
+
+    <string name="pref_media">Music &amp; media</string>
+    <string name="pref_full_player">Built-in music player</string>
+    <string name="pref_full_player_summary">Play music stored on this device. Turn off to show only the basic external-media controls.</string>
+    <string name="pref_media_card_enlarge">Enlarge media card</string>
+    <string name="pref_media_card_enlarge_summary">Give the player more room on the home screen.</string>
+    <string name="pref_media_replaces_weather">Replace weather with media</string>
+    <string name="pref_media_replaces_weather_summary">Use the freed-up space from the weather tile for the player.</string>
     <string name="pref_trip">Trip recording</string>
     <string name="pref_record_trips">Record trip history</string>
     <string name="pref_record_trips_summary">Saves trips with distance, speed &amp; location</string>
@@ -138,6 +192,19 @@
         <item>4</item>
         <item>5</item>
         <item>6</item>
+    </string-array>
+
+    <string-array name="rail_icon_size_entries">
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+        <item>Huge</item>
+    </string-array>
+    <string-array name="rail_icon_size_values">
+        <item>56</item>
+        <item>72</item>
+        <item>88</item>
+        <item>108</item>
     </string-array>
 
     <string-array name="grid_rows_entries">

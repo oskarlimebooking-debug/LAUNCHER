@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/bg_tile"
-    android:padding="14dp">
+    android:padding="12dp">
 
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -14,52 +14,117 @@
         android:gravity="center_vertical">
 
         <TextView
-            android:id="@+id/trips_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/trips_title"
             android:textColor="@color/text_primary"
-            android:textSize="20sp"
+            android:textSize="18sp"
             android:fontFamily="sans-serif-medium" />
 
         <TextView
-            android:id="@+id/month_label"
+            android:id="@+id/trip_status_dot"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="●"
+            android:textSize="14sp"
+            android:textColor="#FF5252"
+            android:layout_marginEnd="4dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/trip_status_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:textSize="11sp"
+            android:fontFamily="monospace"
+            android:textAllCaps="true" />
     </LinearLayout>
 
-    <com.oskar.retrolauncher.ui.trips.TripCalendarView
-        android:id="@+id/calendar"
+    <!-- Stats row -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp" />
+        android:orientation="horizontal"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical">
 
-    <TextView
-        android:id="@+id/summary"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textColor="@color/text_tertiary"
-        android:textSize="12sp" />
+        <com.oskar.retrolauncher.ui.trips.StatCellView
+            android:id="@+id/stat_distance"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/trip_list"
+        <com.oskar.retrolauncher.ui.trips.StatCellView
+            android:id="@+id/stat_duration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <com.oskar.retrolauncher.ui.trips.StatCellView
+            android:id="@+id/stat_avg"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <com.oskar.retrolauncher.ui.trips.StatCellView
+            android:id="@+id/stat_max"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- Speed chart -->
+    <com.oskar.retrolauncher.ui.trips.LiveSpeedChartView
+        android:id="@+id/speed_chart"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="8dp" />
+
+    <!-- Divider with recent-trips header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/trips_recent_header"
+            android:textColor="@color/text_tertiary"
+            android:textSize="10sp"
+            android:fontFamily="monospace"
+            android:textAllCaps="true"
+            android:letterSpacing="0.12" />
+
+        <TextView
+            android:id="@+id/week_summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_tertiary"
+            android:textSize="10sp"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <!-- Horizontal scroller of trip mini cards -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/trip_strip"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:layout_marginTop="6dp"
         android:clipToPadding="false" />
 
     <TextView
         android:id="@+id/empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="24dp"
         android:gravity="center"
+        android:layout_marginTop="-110dp"
         android:text="@string/trips_none"
         android:textColor="@color/text_tertiary"
         android:textSize="13sp"

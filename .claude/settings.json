@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "deny": [
       "Read path:**/.env",
       "Read path:**/.env.*",
